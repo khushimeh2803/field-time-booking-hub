@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff, Mail, Lock, User } from "lucide-react";
@@ -20,6 +19,7 @@ const SignUp = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [role, setRole] = useState("user"); // New state for role
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -49,13 +49,14 @@ const SignUp = () => {
       if (error) throw error;
 
       if (user) {
-        // Insert into profiles table
+        // Insert into profiles table with role
         const { error: profileError } = await supabase
           .from('profiles')
           .insert([
             {
               id: user.id,
               full_name: fullName,
+              role: role,
             }
           ]);
 

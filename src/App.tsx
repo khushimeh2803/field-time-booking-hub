@@ -14,6 +14,13 @@ import SignUp from "./pages/SignUp";
 import NotFound from "./pages/NotFound";
 import AboutUs from "./pages/AboutUs";
 import ContactUs from "./pages/ContactUs";
+import AdminLayout from "./components/admin/AdminLayout";
+import AdminSports from "./pages/admin/Sports";
+import AdminGrounds from "./pages/admin/Grounds";
+import AdminUsers from "./pages/admin/Users";
+import AdminBookings from "./pages/admin/Bookings";
+import AdminReports from "./pages/admin/Reports";
+import AdminSettings from "./pages/admin/Settings";
 
 const queryClient = new QueryClient();
 
@@ -35,6 +42,15 @@ const App = () => (
           <Route path="/about" element={<AboutUs />} />
           <Route path="/contact" element={<ContactUs />} />
           <Route path="*" element={<NotFound />} />
+          
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route path="sports" element={<AdminSports />} />
+            <Route path="grounds" element={<AdminGrounds />} />
+            <Route path="users" element={<AdminUsers />} />
+            <Route path="bookings" element={<AdminBookings />} />
+            <Route path="reports" element={<AdminReports />} />
+            <Route path="settings" element={<AdminSettings />} />
+          </Route>
         </Routes>
       </BrowserRouter>
     </TooltipProvider>
