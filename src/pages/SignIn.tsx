@@ -12,11 +12,38 @@ const SignIn = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // In a real app, add authentication logic here
-    console.log("Login with:", { email, password, rememberMe });
+    setIsLoading(true);
+
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Welcome back!",
+        description: "You have successfully signed in.",
+      });
+
+      navigate("/");
+    } catch (error) {
+      console.error("Error signing in:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to sign in. Please try again.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

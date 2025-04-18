@@ -15,16 +15,67 @@ const SignUp = () => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [agreeTerms, setAgreeTerms] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // In a real app, add registration logic here
-    // Validate password match
+    
     if (password !== confirmPassword) {
-      alert("Passwords do not match");
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Passwords do not match.",
+      });
       return;
     }
-    console.log("Register with:", { fullName, email, password, agreeTerms });
+
+    setIsLoading(true);
+
+    try {
+      const { data: { user }, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+          },
+        },
+      });
+
+      if (error) throw error;
+
+      if (user) {
+        // Insert into profiles table
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert([
+            {
+              id: user.id,
+              full_name: fullName,
+            }
+          ]);
+
+        if (profileError) throw profileError;
+      }
+
+      toast({
+        title: "Welcome to Pitch Perfect!",
+        description: "Your account has been created successfully.",
+      });
+
+      navigate("/");
+    } catch (error) {
+      console.error("Error signing up:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to sign up. Please try again.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
