@@ -1,10 +1,12 @@
 
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff, Mail, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import MainLayout from "@/components/layout/MainLayout";
 
 const SignIn = () => {
@@ -34,7 +36,7 @@ const SignIn = () => {
       });
 
       navigate("/");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error signing in:", error);
       toast({
         variant: "destructive",

@@ -57,6 +57,68 @@ const AboutUs = () => {
           </div>
         </div>
       </section>
+
+      <section className="py-16 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <h2 className="text-3xl font-bold mb-12 text-center">Our Team</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {[
+              { name: "Alex Johnson", role: "Founder & CEO", image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-4.0.3" },
+              { name: "Sarah Williams", role: "Operations Manager", image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-4.0.3" },
+              { name: "Michael Chen", role: "Tech Lead", image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3" },
+              { name: "Emma Rodriguez", role: "Customer Relations", image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?ixlib=rb-4.0.3" }
+            ].map((member, index) => (
+              <div key={index} className="bg-white rounded-lg overflow-hidden shadow-md">
+                <img 
+                  src={member.image} 
+                  alt={member.name} 
+                  className="w-full h-64 object-cover"
+                />
+                <div className="p-6">
+                  <h3 className="text-xl font-semibold mb-1">{member.name}</h3>
+                  <p className="text-muted-foreground">{member.role}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="py-16">
+        <div className="container mx-auto px-4 text-center">
+          <h2 className="text-3xl font-bold mb-6">Our Values</h2>
+          <p className="text-lg text-muted-foreground max-w-3xl mx-auto mb-12">
+            At Pitch Perfect, we're guided by a set of core values that define how we operate and serve our customers.
+          </p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="bg-white p-8 rounded-lg shadow-md text-left">
+              <h3 className="text-xl font-semibold mb-4">Customer Satisfaction</h3>
+              <p className="text-muted-foreground">
+                We put our customers first, always striving to exceed expectations and provide the best possible service.
+              </p>
+            </div>
+            <div className="bg-white p-8 rounded-lg shadow-md text-left">
+              <h3 className="text-xl font-semibold mb-4">Innovation</h3>
+              <p className="text-muted-foreground">
+                We continuously innovate and improve our platform to provide the most seamless booking experience.
+              </p>
+            </div>
+            <div className="bg-white p-8 rounded-lg shadow-md text-left">
+              <h3 className="text-xl font-semibold mb-4">Transparency</h3>
+              <p className="text-muted-foreground">
+                We believe in being transparent in all our operations, from pricing to policies.
+              </p>
+            </div>
+            <div className="bg-white p-8 rounded-lg shadow-md text-left">
+              <h3 className="text-xl font-semibold mb-4">Community</h3>
+              <p className="text-muted-foreground">
+                We're building a community of sports enthusiasts and helping to promote active lifestyles.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
     </MainLayout>
   );
 };
