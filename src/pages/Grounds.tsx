@@ -221,7 +221,7 @@ const Grounds = () => {
                     <SelectValue placeholder="All Sports" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Sports</SelectItem>
+                    <SelectItem value="all">All Sports</SelectItem>
                     <SelectItem value="football">Football</SelectItem>
                     <SelectItem value="cricket">Cricket</SelectItem>
                     <SelectItem value="basketball">Basketball</SelectItem>

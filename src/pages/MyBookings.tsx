@@ -151,7 +151,7 @@ const MyBookings = () => {
                     <SelectValue placeholder="All Sports" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Sports</SelectItem>
+                    <SelectItem value="all">All Sports</SelectItem>
                     <SelectItem value="football">Football</SelectItem>
                     <SelectItem value="cricket">Cricket</SelectItem>
                     <SelectItem value="basketball">Basketball</SelectItem>
@@ -173,7 +173,7 @@ const MyBookings = () => {
                       <SelectValue placeholder="All Statuses" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All Statuses</SelectItem>
+                      <SelectItem value="all">All Statuses</SelectItem>
                       <SelectItem value="confirmed">Confirmed</SelectItem>
                       <SelectItem value="pending">Pending</SelectItem>
                       <SelectItem value="cancelled">Cancelled</SelectItem>
