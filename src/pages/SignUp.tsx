@@ -17,9 +17,9 @@ const SignUp = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [role, setRole] = useState<"user" | "admin">("user");
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [role, setRole] = useState("user"); // New state for role
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -36,7 +36,7 @@ const SignUp = () => {
     setIsLoading(true);
 
     try {
-      const { data: { user }, error } = await supabase.auth.signUp({
+      const { data: { user }, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -46,19 +46,20 @@ const SignUp = () => {
         },
       });
 
-      if (error) throw error;
+      if (signUpError) throw signUpError;
 
       if (user) {
         // Insert into profiles table with role
         const { error: profileError } = await supabase
           .from('profiles')
-          .insert([
-            {
-              id: user.id,
-              full_name: fullName,
-              role: role,
-            }
-          ]);
+          .upsert({
+            id: user.id,
+            full_name: fullName,
+            email: user.email,
+            role: role,
+          }, {
+            onConflict: 'id'
+          });
 
         if (profileError) throw profileError;
       }
@@ -175,6 +176,35 @@ const SignUp = () => {
                   )}
                 </div>
               </div>
+              <div>
+                <label className="block mb-2 text-sm font-medium text-gray-700">
+                  Account Type
+                </label>
+                <div className="flex space-x-4">
+                  <label className="inline-flex items-center">
+                    <input
+                      type="radio"
+                      className="form-radio"
+                      name="role"
+                      value="user"
+                      checked={role === "user"}
+                      onChange={() => setRole("user")}
+                    />
+                    <span className="ml-2">User</span>
+                  </label>
+                  <label className="inline-flex items-center">
+                    <input
+                      type="radio"
+                      className="form-radio"
+                      name="role"
+                      value="admin"
+                      checked={role === "admin"}
+                      onChange={() => setRole("admin")}
+                    />
+                    <span className="ml-2">Admin</span>
+                  </label>
+                </div>
+              </div>
             </div>
 
             <div className="flex items-center">
@@ -196,9 +226,9 @@ const SignUp = () => {
               <Button
                 type="submit"
                 className="w-full bg-primary hover:bg-primary/90"
-                disabled={!agreeTerms}
+                disabled={!agreeTerms || isLoading}
               >
-                Sign Up
+                {isLoading ? "Signing Up..." : "Sign Up"}
               </Button>
             </div>
           </form>
