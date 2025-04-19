@@ -15,6 +15,7 @@ import SignUp from "./pages/SignUp";
 import NotFound from "./pages/NotFound";
 import AboutUs from "./pages/AboutUs";
 import ContactUs from "./pages/ContactUs";
+import Membership from "./pages/Membership";
 import AdminLayout from "./components/admin/AdminLayout";
 import AdminSports from "./pages/admin/Sports";
 import AdminGrounds from "./pages/admin/Grounds";
@@ -22,6 +23,7 @@ import AdminUsers from "./pages/admin/Users";
 import AdminBookings from "./pages/admin/Bookings";
 import AdminReports from "./pages/admin/Reports";
 import AdminSettings from "./pages/admin/Settings";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -36,15 +38,16 @@ const App = () => (
           <Route path="/sports" element={<Sports />} />
           <Route path="/grounds" element={<Grounds />} />
           <Route path="/grounds/:id" element={<GroundDetails />} />
-          <Route path="/booking" element={<Booking />} />
-          <Route path="/my-bookings" element={<MyBookings />} />
+          <Route path="/booking" element={<ProtectedRoute><Booking /></ProtectedRoute>} />
+          <Route path="/my-bookings" element={<ProtectedRoute><MyBookings /></ProtectedRoute>} />
           <Route path="/signin" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
           <Route path="/about" element={<AboutUs />} />
           <Route path="/contact" element={<ContactUs />} />
+          <Route path="/membership" element={<Membership />} />
           <Route path="*" element={<NotFound />} />
           
-          <Route path="/admin" element={<AdminLayout><Outlet /></AdminLayout>}>
+          <Route path="/admin" element={<ProtectedRoute requireAdmin={true}><AdminLayout><Outlet /></AdminLayout></ProtectedRoute>}>
             <Route path="sports" element={<AdminSports />} />
             <Route path="grounds" element={<AdminGrounds />} />
             <Route path="users" element={<AdminUsers />} />

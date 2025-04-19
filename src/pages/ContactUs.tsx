@@ -1,11 +1,11 @@
 
 import { useState } from "react";
+import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import MainLayout from "@/components/layout/MainLayout";
 import { Mail, Phone, MapPin } from "lucide-react";
 
 const ContactUs = () => {
@@ -15,32 +15,45 @@ const ContactUs = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!name || !email || !message) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Please fill in all fields",
+      });
+      return;
+    }
+    
     setIsSubmitting(true);
-
+    
     try {
       const { error } = await supabase
-        .from("contact_submissions")
-        .insert([{ name, email, message }]);
-
+        .from('contact_submissions')
+        .insert([
+          { name, email, message }
+        ]);
+        
       if (error) throw error;
-
+      
       toast({
-        title: "Message Sent!",
-        description: "We'll get back to you as soon as possible.",
+        title: "Message Sent",
+        description: "We'll get back to you as soon as possible!",
       });
-
+      
       // Reset form
       setName("");
       setEmail("");
       setMessage("");
+      
     } catch (error: any) {
-      console.error("Error submitting form:", error);
+      console.error("Error submitting contact form:", error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to send your message. Please try again.",
+        description: "Failed to send message. Please try again.",
       });
     } finally {
       setIsSubmitting(false);
@@ -49,96 +62,110 @@ const ContactUs = () => {
 
   return (
     <MainLayout>
-      <section className="bg-gradient-to-r from-primary/90 to-secondary/90 text-white py-12">
-        <div className="container mx-auto px-4 text-center">
+      <div className="bg-gradient-to-r from-primary/10 to-secondary/10 py-12">
+        <div className="container mx-auto text-center px-4">
           <h1 className="text-4xl font-bold mb-4">Contact Us</h1>
-          <p className="text-xl max-w-2xl mx-auto">Get in touch with our team</p>
+          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+            Have questions or suggestions? We'd love to hear from you!
+          </p>
         </div>
-      </section>
-
-      <section className="py-16 bg-muted/30">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-            <div>
-              <h2 className="text-3xl font-bold mb-6">Get In Touch</h2>
-              <p className="text-muted-foreground mb-8">
-                Have questions about Pitch Perfect or need assistance with your booking? Our team is here to help. Fill out the form and we'll get back to you as soon as possible.
-              </p>
+      </div>
+      
+      <div className="container mx-auto py-12 px-4">
+        <div className="grid md:grid-cols-3 gap-8">
+          <div className="md:col-span-1">
+            <div className="space-y-8">
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <div className="flex items-center mb-4">
+                  <Mail className="h-5 w-5 text-primary mr-2" />
+                  <h3 className="text-xl font-semibold">Email Us</h3>
+                </div>
+                <p className="text-muted-foreground">
+                  Our friendly team is here to help.
+                </p>
+                <a href="mailto:hello@pitchperfect.com" className="text-primary font-medium block mt-2">
+                  hello@pitchperfect.com
+                </a>
+              </div>
               
-              <div className="space-y-6">
-                <div className="flex items-start space-x-4">
-                  <MapPin className="h-6 w-6 text-primary mt-0.5" />
-                  <div>
-                    <h3 className="font-semibold text-lg">Our Location</h3>
-                    <p className="text-muted-foreground">123 Sports Avenue, Cityville, CV 12345</p>
-                  </div>
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <div className="flex items-center mb-4">
+                  <Phone className="h-5 w-5 text-primary mr-2" />
+                  <h3 className="text-xl font-semibold">Call Us</h3>
                 </div>
-                
-                <div className="flex items-start space-x-4">
-                  <Mail className="h-6 w-6 text-primary mt-0.5" />
-                  <div>
-                    <h3 className="font-semibold text-lg">Email Us</h3>
-                    <p className="text-muted-foreground">info@pitchperfect.com</p>
-                  </div>
+                <p className="text-muted-foreground">
+                  Mon-Fri from 8am to 5pm
+                </p>
+                <a href="tel:+123456789" className="text-primary font-medium block mt-2">
+                  +1 (234) 567-89
+                </a>
+              </div>
+              
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <div className="flex items-center mb-4">
+                  <MapPin className="h-5 w-5 text-primary mr-2" />
+                  <h3 className="text-xl font-semibold">Visit Us</h3>
                 </div>
-                
-                <div className="flex items-start space-x-4">
-                  <Phone className="h-6 w-6 text-primary mt-0.5" />
-                  <div>
-                    <h3 className="font-semibold text-lg">Call Us</h3>
-                    <p className="text-muted-foreground">+1 (555) 123-4567</p>
-                  </div>
-                </div>
+                <p className="text-muted-foreground">
+                  Come say hello at our office
+                </p>
+                <address className="text-primary font-medium block mt-2 not-italic">
+                  123 Sports Avenue<br />
+                  Stadium District<br />
+                  Sport City, SP 12345
+                </address>
               </div>
             </div>
-            
-            <div className="bg-white p-8 rounded-lg shadow-md">
-              <h2 className="text-2xl font-bold mb-6">Send us a Message</h2>
+          </div>
+          
+          <div className="md:col-span-2">
+            <div className="bg-white rounded-lg shadow-md p-8">
+              <h2 className="text-2xl font-semibold mb-6">Send us a Message</h2>
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-muted-foreground mb-1">
-                    Full Name
+                  <label htmlFor="name" className="block mb-2 text-sm font-medium">
+                    Your name
                   </label>
-                  <Input
+                  <Input 
                     id="name"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
+                    placeholder="John Smith"
                     required
-                    placeholder="Your full name"
                   />
                 </div>
                 
                 <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-muted-foreground mb-1">
-                    Email Address
+                  <label htmlFor="email" className="block mb-2 text-sm font-medium">
+                    Your email
                   </label>
-                  <Input
+                  <Input 
                     id="email"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    placeholder="john@example.com"
                     required
-                    placeholder="Your email address"
                   />
                 </div>
                 
                 <div>
-                  <label htmlFor="message" className="block text-sm font-medium text-muted-foreground mb-1">
-                    Message
+                  <label htmlFor="message" className="block mb-2 text-sm font-medium">
+                    Your message
                   </label>
-                  <Textarea
+                  <Textarea 
                     id="message"
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
-                    required
                     placeholder="How can we help you?"
-                    className="min-h-[150px]"
+                    rows={6}
+                    required
                   />
                 </div>
                 
                 <Button 
                   type="submit" 
-                  className="w-full"
+                  className="w-full bg-primary hover:bg-primary/90"
                   disabled={isSubmitting}
                 >
                   {isSubmitting ? "Sending..." : "Send Message"}
@@ -147,23 +174,7 @@ const ContactUs = () => {
             </div>
           </div>
         </div>
-      </section>
-
-      <section className="py-16">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl font-bold mb-8">Visit Our Facilities</h2>
-          <div className="aspect-w-16 aspect-h-9 rounded-lg overflow-hidden">
-            <iframe 
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3024.2219901290355!2d-74.00369368400567!3d40.71312797933185!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x89c25a3b3a76c305%3A0xbfd3cde26ca78de4!2sCity%20Hall%20Park!5e0!3m2!1sen!2sus!4v1649292202408!5m2!1sen!2sus" 
-              className="w-full h-[400px] rounded-lg"
-              style={{ border: 0 }}
-              allowFullScreen={true}
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-            ></iframe>
-          </div>
-        </div>
-      </section>
+      </div>
     </MainLayout>
   );
 };

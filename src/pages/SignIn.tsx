@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Eye, EyeOff, Mail, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,7 +16,12 @@ const SignIn = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
+  
+  // Get the redirect path from URL query params
+  const searchParams = new URLSearchParams(location.search);
+  const redirectPath = searchParams.get('redirect') || '/';
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -35,7 +40,8 @@ const SignIn = () => {
         description: "You have successfully signed in.",
       });
 
-      navigate("/");
+      // Redirect to the page they were trying to access or home
+      navigate(redirectPath);
     } catch (error: any) {
       console.error("Error signing in:", error);
       toast({
@@ -125,8 +131,9 @@ const SignIn = () => {
               <Button
                 type="submit"
                 className="w-full bg-primary hover:bg-primary/90"
+                disabled={isLoading}
               >
-                Sign In
+                {isLoading ? "Signing In..." : "Sign In"}
               </Button>
             </div>
           </form>

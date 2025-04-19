@@ -11,22 +11,40 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { X, CheckCircle } from "lucide-react";
+import { format } from "date-fns";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const AdminBookings = () => {
   const [bookings, setBookings] = useState<any[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
+  const [grounds, setGrounds] = useState<any[]>([]);
+  const [statusFilter, setStatusFilter] = useState("all");
   const { toast } = useToast();
 
   useEffect(() => {
     fetchBookings();
+    fetchUsers();
+    fetchGrounds();
   }, []);
 
-  const fetchBookings = async () => {
+  const fetchBookings = async (status?: string) => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from("bookings")
-        .select("*, grounds(name), profiles(full_name)")
-        .order("created_at", { ascending: false });
+        .select("*")
+        .order("booking_date", { ascending: false });
+        
+      if (status && status !== "all") {
+        query = query.eq("status", status);
+      }
+        
+      const { data, error } = await query;
 
       if (error) throw error;
       setBookings(data || []);
@@ -39,21 +57,57 @@ const AdminBookings = () => {
     }
   };
 
-  const handleUpdateBookingStatus = async (bookingId: string, status: string) => {
+  const fetchUsers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, full_name, email");
+
+      if (error) throw error;
+      setUsers(data || []);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+    }
+  };
+
+  const fetchGrounds = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("grounds")
+        .select("id, name");
+
+      if (error) throw error;
+      setGrounds(data || []);
+    } catch (error) {
+      console.error("Error fetching grounds:", error);
+    }
+  };
+
+  const getUserName = (userId: string) => {
+    const user = users.find(u => u.id === userId);
+    return user ? user.full_name : 'Unknown';
+  };
+
+  const getGroundName = (groundId: string) => {
+    const ground = grounds.find(g => g.id === groundId);
+    return ground ? ground.name : 'Unknown';
+  };
+
+  const handleStatusChange = async (bookingId: string, newStatus: string) => {
     try {
       const { error } = await supabase
         .from("bookings")
-        .update({ status })
+        .update({ status: newStatus })
         .eq("id", bookingId);
 
       if (error) throw error;
 
       toast({
-        title: "Booking Updated",
-        description: `Booking ${status}`,
+        title: "Status Updated",
+        description: `Booking status changed to ${newStatus}`,
       });
 
-      fetchBookings(); // Refresh the list
+      fetchBookings(statusFilter !== "all" ? statusFilter : undefined);
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -63,65 +117,100 @@ const AdminBookings = () => {
     }
   };
 
+  const handleFilterChange = (value: string) => {
+    setStatusFilter(value);
+    fetchBookings(value !== "all" ? value : undefined);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Manage Bookings</h1>
+        <div className="flex items-center space-x-2">
+          <span className="text-sm text-muted-foreground">Filter by status:</span>
+          <Select 
+            value={statusFilter}
+            onValueChange={handleFilterChange}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Filter by status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Bookings</SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="confirmed">Confirmed</SelectItem>
+              <SelectItem value="cancelled">Cancelled</SelectItem>
+              <SelectItem value="completed">Completed</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Booking ID</TableHead>
-            <TableHead>Ground</TableHead>
-            <TableHead>User</TableHead>
-            <TableHead>Date</TableHead>
-            <TableHead>Time</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Payment Status</TableHead>
-            <TableHead>Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {bookings.map((booking) => (
-            <TableRow key={booking.id}>
-              <TableCell>{booking.id.slice(0, 8)}</TableCell>
-              <TableCell>{booking.grounds?.name || 'N/A'}</TableCell>
-              <TableCell>{booking.profiles?.full_name || 'N/A'}</TableCell>
-              <TableCell>{new Date(booking.booking_date).toLocaleDateString()}</TableCell>
-              <TableCell>{`${booking.start_time} - ${booking.end_time}`}</TableCell>
-              <TableCell>{booking.status}</TableCell>
-              <TableCell>{booking.payment_status}</TableCell>
-              <TableCell>
-                <div className="flex space-x-2">
-                  {booking.status === 'pending' && (
-                    <>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="text-green-500"
-                        onClick={() => handleUpdateBookingStatus(booking.id, 'confirmed')}
-                      >
-                        <CheckCircle className="h-4 w-4 mr-2" />
-                        Confirm
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="text-red-500"
-                        onClick={() => handleUpdateBookingStatus(booking.id, 'cancelled')}
-                      >
-                        <X className="h-4 w-4 mr-2" />
-                        Cancel
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </TableCell>
+      <div className="bg-white shadow rounded-lg overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>ID</TableHead>
+              <TableHead>User</TableHead>
+              <TableHead>Ground</TableHead>
+              <TableHead>Date</TableHead>
+              <TableHead>Time</TableHead>
+              <TableHead>Amount</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Actions</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {bookings.map((booking) => (
+              <TableRow key={booking.id}>
+                <TableCell className="font-medium">{booking.id.substring(0, 8)}...</TableCell>
+                <TableCell>{getUserName(booking.user_id)}</TableCell>
+                <TableCell>{getGroundName(booking.ground_id)}</TableCell>
+                <TableCell>
+                  {booking.booking_date ? format(new Date(booking.booking_date), 'MMM dd, yyyy') : 'N/A'}
+                </TableCell>
+                <TableCell>
+                  {booking.start_time} - {booking.end_time}
+                </TableCell>
+                <TableCell>${booking.total_amount}</TableCell>
+                <TableCell>
+                  <span className={`px-2 py-1 rounded text-xs ${
+                    booking.status === 'confirmed' ? 'bg-green-100 text-green-800' : 
+                    booking.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
+                    booking.status === 'cancelled' ? 'bg-red-100 text-red-800' : 
+                    'bg-blue-100 text-blue-800'
+                  }`}>
+                    {booking.status}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <Select 
+                    defaultValue={booking.status}
+                    onValueChange={(value) => handleStatusChange(booking.id, value)}
+                  >
+                    <SelectTrigger className="w-[140px]">
+                      <SelectValue placeholder="Change status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="confirmed">Confirm</SelectItem>
+                      <SelectItem value="cancelled">Cancel</SelectItem>
+                      <SelectItem value="completed">Complete</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </TableCell>
+              </TableRow>
+            ))}
+            {bookings.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={8} className="text-center py-4">
+                  No bookings found
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 };

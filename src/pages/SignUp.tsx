@@ -1,5 +1,6 @@
+
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Eye, EyeOff, Mail, Lock, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +8,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import MainLayout from "@/components/layout/MainLayout";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 
 const SignUp = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -19,7 +22,12 @@ const SignUp = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [role, setRole] = useState<"user" | "admin">("user");
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
+
+  // Get the redirect path from URL query params
+  const searchParams = new URLSearchParams(location.search);
+  const redirectPath = searchParams.get('redirect') || '/';
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -69,7 +77,8 @@ const SignUp = () => {
         description: "Your account has been created successfully.",
       });
 
-      navigate("/");
+      // Redirect to the page they were trying to access or home
+      navigate(redirectPath);
     } catch (error: any) {
       console.error("Error signing up:", error);
       toast({
@@ -180,30 +189,20 @@ const SignUp = () => {
                 <label className="block mb-2 text-sm font-medium text-gray-700">
                   Account Type
                 </label>
-                <div className="flex space-x-4">
-                  <label className="inline-flex items-center">
-                    <input
-                      type="radio"
-                      className="form-radio"
-                      name="role"
-                      value="user"
-                      checked={role === "user"}
-                      onChange={() => setRole("user")}
-                    />
-                    <span className="ml-2">User</span>
-                  </label>
-                  <label className="inline-flex items-center">
-                    <input
-                      type="radio"
-                      className="form-radio"
-                      name="role"
-                      value="admin"
-                      checked={role === "admin"}
-                      onChange={() => setRole("admin")}
-                    />
-                    <span className="ml-2">Admin</span>
-                  </label>
-                </div>
+                <RadioGroup 
+                  value={role} 
+                  onValueChange={(value) => setRole(value as "user" | "admin")}
+                  className="flex space-x-4"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="user" id="user-role" />
+                    <Label htmlFor="user-role">User</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="admin" id="admin-role" />
+                    <Label htmlFor="admin-role">Admin</Label>
+                  </div>
+                </RadioGroup>
               </div>
             </div>
 
