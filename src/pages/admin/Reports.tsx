@@ -79,7 +79,8 @@ const AdminReports = () => {
         .select('total_amount');
         
       if (revenueError) throw revenueError;
-      const totalAmount = revenueData?.reduce((sum, booking) => sum + parseFloat(booking.total_amount), 0);
+      // Fix: Convert the numeric total_amount to a string where needed
+      const totalAmount = revenueData?.reduce((sum, booking) => sum + parseFloat(String(booking.total_amount)), 0);
       setTotalRevenue(totalAmount || 0);
       
       // Get active grounds
