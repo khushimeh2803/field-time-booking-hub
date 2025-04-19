@@ -1,8 +1,9 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
 import Home from "./pages/Home";
 import Sports from "./pages/Sports";
 import Grounds from "./pages/Grounds";
@@ -43,7 +44,7 @@ const App = () => (
           <Route path="/contact" element={<ContactUs />} />
           <Route path="*" element={<NotFound />} />
           
-          <Route path="/admin" element={<AdminLayout />}>
+          <Route path="/admin" element={<AdminLayout><Outlet /></AdminLayout>}>
             <Route path="sports" element={<AdminSports />} />
             <Route path="grounds" element={<AdminGrounds />} />
             <Route path="users" element={<AdminUsers />} />
