@@ -1,6 +1,6 @@
 
 import React from "react";
-import SidebarNav from "./SidebarNav";
+import { SidebarNav } from "./SidebarNav";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
