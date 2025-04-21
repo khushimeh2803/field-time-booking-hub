@@ -79,7 +79,7 @@ const SignUp = () => {
 
       // If admin, redirect to admin dashboard; otherwise, normal redirect
       if (role === "admin") {
-        navigate("/admin/sports");
+        navigate("/admin/dashboard");
       } else {
         navigate(redirectPath);
       }

@@ -17,12 +17,14 @@ import AboutUs from "./pages/AboutUs";
 import ContactUs from "./pages/ContactUs";
 import Membership from "./pages/Membership";
 import AdminLayout from "./components/admin/AdminLayout";
+import AdminDashboard from "./pages/admin/Dashboard";
 import AdminSports from "./pages/admin/Sports";
 import AdminGrounds from "./pages/admin/Grounds";
 import AdminUsers from "./pages/admin/Users";
 import AdminBookings from "./pages/admin/Bookings";
 import AdminReports from "./pages/admin/Reports";
 import AdminSettings from "./pages/admin/Settings";
+import AdminFeedback from "./pages/admin/Feedback";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -48,10 +50,12 @@ const App = () => (
           <Route path="*" element={<NotFound />} />
           
           <Route path="/admin" element={<ProtectedRoute requireAdmin={true}><AdminLayout><Outlet /></AdminLayout></ProtectedRoute>}>
+            <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="sports" element={<AdminSports />} />
             <Route path="grounds" element={<AdminGrounds />} />
             <Route path="users" element={<AdminUsers />} />
             <Route path="bookings" element={<AdminBookings />} />
+            <Route path="feedback" element={<AdminFeedback />} />
             <Route path="reports" element={<AdminReports />} />
             <Route path="settings" element={<AdminSettings />} />
           </Route>

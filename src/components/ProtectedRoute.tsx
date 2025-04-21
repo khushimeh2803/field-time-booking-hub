@@ -21,7 +21,7 @@ const ProtectedRoute = ({ children, requireAdmin = false }: ProtectedRouteProps)
         const sessionUser = data?.session?.user || null;
         setUser(sessionUser);
         
-        if (sessionUser && requireAdmin) {
+        if (sessionUser) {
           const { data: profileData } = await supabase
             .from('profiles')
             .select('role')

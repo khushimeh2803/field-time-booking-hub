@@ -7,7 +7,9 @@ import {
   Calendar,
   BarChart3,
   Settings,
-  DumbbellIcon
+  DumbbellIcon,
+  LayoutDashboard,
+  MessageSquare
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -17,6 +19,11 @@ export function SidebarNav({ className, ...props }: SidebarNavProps) {
   const location = useLocation();
 
   const items = [
+    {
+      title: "Dashboard",
+      href: "/admin/dashboard",
+      icon: LayoutDashboard
+    },
     {
       title: "Sports",
       href: "/admin/sports",
@@ -38,6 +45,11 @@ export function SidebarNav({ className, ...props }: SidebarNavProps) {
       icon: Calendar
     },
     {
+      title: "Feedback",
+      href: "/admin/feedback",
+      icon: MessageSquare
+    },
+    {
       title: "Reports",
       href: "/admin/reports",
       icon: BarChart3
@@ -52,18 +64,22 @@ export function SidebarNav({ className, ...props }: SidebarNavProps) {
   return (
     <nav
       className={cn(
-        "flex flex-col space-x-2 lg:space-x-0 lg:space-y-1 p-4",
+        "flex flex-col space-x-2 lg:space-x-0 lg:space-y-1 p-4 min-h-screen bg-white shadow-md w-64",
         className
       )}
       {...props}
     >
+      <div className="flex items-center justify-center p-4 mb-4">
+        <h2 className="text-xl font-bold">Admin Panel</h2>
+      </div>
+      
       {items.map((item) => {
         const Icon = item.icon;
         return (
           <Button
             key={item.href}
             variant={location.pathname === item.href ? "secondary" : "ghost"}
-            className="justify-start"
+            className="justify-start mb-1"
             asChild
           >
             <Link to={item.href}>
