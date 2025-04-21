@@ -9,7 +9,10 @@ import {
   Settings,
   DumbbellIcon,
   LayoutDashboard,
-  MessageSquare
+  MessageSquare,
+  Tag,
+  BarChart,
+  Mail
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -45,9 +48,29 @@ export function SidebarNav({ className, ...props }: SidebarNavProps) {
       icon: Calendar
     },
     {
+      title: "Promo Codes",
+      href: "/admin/promo-codes",
+      icon: Tag
+    },
+    {
+      title: "Membership Plans",
+      href: "/admin/membership-plans",
+      icon: BarChart
+    },
+    {
+      title: "User Memberships",
+      href: "/admin/user-memberships",
+      icon: Users
+    },
+    {
       title: "Feedback",
       href: "/admin/feedback",
       icon: MessageSquare
+    },
+    {
+      title: "Contact Submissions",
+      href: "/admin/contact-submissions",
+      icon: Mail
     },
     {
       title: "Reports",

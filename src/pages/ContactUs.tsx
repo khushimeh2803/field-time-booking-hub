@@ -1,12 +1,21 @@
 
 import { useState } from "react";
-import MainLayout from "@/components/layout/MainLayout";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Mail, Phone, MapPin } from "lucide-react";
+import MainLayout from "@/components/layout/MainLayout";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Mail, MapPin, Phone } from "lucide-react";
 
 const ContactUs = () => {
   const [name, setName] = useState("");
@@ -21,8 +30,8 @@ const ContactUs = () => {
     if (!name || !email || !message) {
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "Please fill in all fields",
+        title: "Missing Information",
+        description: "Please fill in all required fields",
       });
       return;
     }
@@ -31,29 +40,26 @@ const ContactUs = () => {
     
     try {
       const { error } = await supabase
-        .from('contact_submissions')
-        .insert([
-          { name, email, message }
-        ]);
+        .from("contact_submissions")
+        .insert([{ name, email, message }]);
         
       if (error) throw error;
       
       toast({
         title: "Message Sent",
-        description: "We'll get back to you as soon as possible!",
+        description: "Thank you for your message. We'll get back to you soon!",
       });
       
-      // Reset form
+      // Clear form
       setName("");
       setEmail("");
       setMessage("");
       
     } catch (error: any) {
-      console.error("Error submitting contact form:", error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to send message. Please try again.",
+        description: error.message || "Failed to send your message. Please try again.",
       });
     } finally {
       setIsSubmitting(false);
@@ -62,116 +68,122 @@ const ContactUs = () => {
 
   return (
     <MainLayout>
-      <div className="bg-gradient-to-r from-primary/10 to-secondary/10 py-12">
-        <div className="container mx-auto text-center px-4">
-          <h1 className="text-4xl font-bold mb-4">Contact Us</h1>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Have questions or suggestions? We'd love to hear from you!
-          </p>
-        </div>
-      </div>
-      
-      <div className="container mx-auto py-12 px-4">
-        <div className="grid md:grid-cols-3 gap-8">
-          <div className="md:col-span-1">
-            <div className="space-y-8">
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <div className="flex items-center mb-4">
-                  <Mail className="h-5 w-5 text-primary mr-2" />
-                  <h3 className="text-xl font-semibold">Email Us</h3>
+      <div className="container mx-auto py-10">
+        <h1 className="text-4xl font-bold mb-6">Contact Us</h1>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <Card>
+            <CardHeader>
+              <CardTitle>Get In Touch</CardTitle>
+              <CardDescription>
+                We'd love to hear from you. Fill out the form and we'll get back to you as soon as possible.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit}>
+                <div className="grid gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="name">Name</Label>
+                    <Input
+                      id="name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="Your name"
+                      required
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="Your email address"
+                      required
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="message">Message</Label>
+                    <Textarea
+                      id="message"
+                      value={message}
+                      onChange={(e) => setMessage(e.target.value)}
+                      placeholder="Your message"
+                      className="min-h-[120px]"
+                      required
+                    />
+                  </div>
                 </div>
-                <p className="text-muted-foreground">
-                  Our friendly team is here to help.
-                </p>
-                <a href="mailto:hello@pitchperfect.com" className="text-primary font-medium block mt-2">
-                  hello@pitchperfect.com
-                </a>
-              </div>
-              
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <div className="flex items-center mb-4">
-                  <Phone className="h-5 w-5 text-primary mr-2" />
-                  <h3 className="text-xl font-semibold">Call Us</h3>
-                </div>
-                <p className="text-muted-foreground">
-                  Mon-Fri from 8am to 5pm
-                </p>
-                <a href="tel:+123456789" className="text-primary font-medium block mt-2">
-                  +1 (234) 567-89
-                </a>
-              </div>
-              
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <div className="flex items-center mb-4">
-                  <MapPin className="h-5 w-5 text-primary mr-2" />
-                  <h3 className="text-xl font-semibold">Visit Us</h3>
-                </div>
-                <p className="text-muted-foreground">
-                  Come say hello at our office
-                </p>
-                <address className="text-primary font-medium block mt-2 not-italic">
-                  123 Sports Avenue<br />
-                  Stadium District<br />
-                  Sport City, SP 12345
-                </address>
-              </div>
-            </div>
-          </div>
-          
-          <div className="md:col-span-2">
-            <div className="bg-white rounded-lg shadow-md p-8">
-              <h2 className="text-2xl font-semibold mb-6">Send us a Message</h2>
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div>
-                  <label htmlFor="name" className="block mb-2 text-sm font-medium">
-                    Your name
-                  </label>
-                  <Input 
-                    id="name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="John Smith"
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <label htmlFor="email" className="block mb-2 text-sm font-medium">
-                    Your email
-                  </label>
-                  <Input 
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="john@example.com"
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <label htmlFor="message" className="block mb-2 text-sm font-medium">
-                    Your message
-                  </label>
-                  <Textarea 
-                    id="message"
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    placeholder="How can we help you?"
-                    rows={6}
-                    required
-                  />
-                </div>
-                
-                <Button 
-                  type="submit" 
-                  className="w-full bg-primary hover:bg-primary/90"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? "Sending..." : "Send Message"}
-                </Button>
+                <CardFooter className="px-0 pt-4">
+                  <Button type="submit" className="w-full" disabled={isSubmitting}>
+                    {isSubmitting ? "Sending..." : "Send Message"}
+                  </Button>
+                </CardFooter>
               </form>
-            </div>
+            </CardContent>
+          </Card>
+          
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Contact Information</CardTitle>
+                <CardDescription>
+                  Ways to reach us directly
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <Mail className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                      <p className="font-medium">Email Us</p>
+                      <p className="text-sm text-muted-foreground">support@sportsgroundbooking.com</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Phone className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                      <p className="font-medium">Call Us</p>
+                      <p className="text-sm text-muted-foreground">+1 (555) 123-4567</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <MapPin className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                      <p className="font-medium">Visit Us</p>
+                      <p className="text-sm text-muted-foreground">
+                        123 Sports Street<br />
+                        Athletics District<br />
+                        Game City, GC 12345
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>Office Hours</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span>Monday - Friday</span>
+                    <span>9:00 AM - 6:00 PM</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Saturday</span>
+                    <span>10:00 AM - 4:00 PM</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Sunday</span>
+                    <span>Closed</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>

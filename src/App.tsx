@@ -25,6 +25,10 @@ import AdminBookings from "./pages/admin/Bookings";
 import AdminReports from "./pages/admin/Reports";
 import AdminSettings from "./pages/admin/Settings";
 import AdminFeedback from "./pages/admin/Feedback";
+import PromoManagement from "./pages/admin/PromoManagement";
+import MembershipPlans from "./pages/admin/MembershipPlans";
+import UserMemberships from "./pages/admin/UserMemberships";
+import ContactSubmissions from "./pages/admin/ContactSubmissions";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -58,6 +62,10 @@ const App = () => (
             <Route path="feedback" element={<AdminFeedback />} />
             <Route path="reports" element={<AdminReports />} />
             <Route path="settings" element={<AdminSettings />} />
+            <Route path="promo-codes" element={<PromoManagement />} />
+            <Route path="membership-plans" element={<MembershipPlans />} />
+            <Route path="user-memberships" element={<UserMemberships />} />
+            <Route path="contact-submissions" element={<ContactSubmissions />} />
           </Route>
         </Routes>
       </BrowserRouter>
