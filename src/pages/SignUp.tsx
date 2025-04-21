@@ -77,8 +77,12 @@ const SignUp = () => {
         description: "Your account has been created successfully.",
       });
 
-      // Redirect to the page they were trying to access or home
-      navigate(redirectPath);
+      // If admin, redirect to admin dashboard; otherwise, normal redirect
+      if (role === "admin") {
+        navigate("/admin/sports");
+      } else {
+        navigate(redirectPath);
+      }
     } catch (error: any) {
       console.error("Error signing up:", error);
       toast({
