@@ -12,9 +12,11 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
+import AddSportForm from "@/components/admin/forms/AddSportForm";
 
 const AdminSports = () => {
   const [sports, setSports] = useState<any[]>([]);
+  const [isAddFormOpen, setIsAddFormOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -43,7 +45,7 @@ const AdminSports = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Manage Sports</h1>
-        <Button>
+        <Button onClick={() => setIsAddFormOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
           Add Sport
         </Button>
@@ -59,31 +61,45 @@ const AdminSports = () => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {sports.map((sport) => (
-            <TableRow key={sport.id}>
-              <TableCell>{sport.name}</TableCell>
-              <TableCell>{sport.description}</TableCell>
-              <TableCell>
-                {sport.image_url && (
-                  <img
-                    src={sport.image_url}
-                    alt={sport.name}
-                    className="w-10 h-10 object-cover rounded"
-                  />
-                )}
-              </TableCell>
-              <TableCell>
-                <Button variant="ghost" size="sm">
-                  Edit
-                </Button>
-                <Button variant="ghost" size="sm" className="text-red-500">
-                  Delete
-                </Button>
+          {sports.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={4} className="text-center py-8">
+                No sports found. Add your first sport!
               </TableCell>
             </TableRow>
-          ))}
+          ) : (
+            sports.map((sport) => (
+              <TableRow key={sport.id}>
+                <TableCell>{sport.name}</TableCell>
+                <TableCell>{sport.description}</TableCell>
+                <TableCell>
+                  {sport.image_url && (
+                    <img
+                      src={sport.image_url}
+                      alt={sport.name}
+                      className="w-10 h-10 object-cover rounded"
+                    />
+                  )}
+                </TableCell>
+                <TableCell>
+                  <Button variant="ghost" size="sm">
+                    Edit
+                  </Button>
+                  <Button variant="ghost" size="sm" className="text-red-500">
+                    Delete
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))
+          )}
         </TableBody>
       </Table>
+      
+      <AddSportForm 
+        open={isAddFormOpen} 
+        onOpenChange={setIsAddFormOpen} 
+        onSuccess={fetchSports} 
+      />
     </div>
   );
 };

@@ -14,10 +14,12 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Trash2, Plus, Edit } from "lucide-react";
 import { format } from "date-fns";
+import AddPromoCodeForm from "@/components/admin/forms/AddPromoCodeForm";
 
 const PromoManagement = () => {
   const [promoCodes, setPromoCodes] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAddFormOpen, setIsAddFormOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -105,7 +107,7 @@ const PromoManagement = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Promo Codes Management</h1>
-        <Button>
+        <Button onClick={() => setIsAddFormOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
           Add Promo Code
         </Button>
@@ -184,6 +186,12 @@ const PromoManagement = () => {
           </Table>
         )}
       </Card>
+
+      <AddPromoCodeForm
+        open={isAddFormOpen}
+        onOpenChange={setIsAddFormOpen}
+        onSuccess={fetchPromoCodes}
+      />
     </div>
   );
 };

@@ -3,10 +3,11 @@ import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Download } from "lucide-react";
+import { RefreshCcw } from "lucide-react";
 import StatsOverview from "@/components/admin/reports/StatsOverview";
 import BookingsBarChart from "@/components/admin/reports/BookingsBarChart";
 import SportPieChart from "@/components/admin/reports/SportPieChart";
+import ExportPDF from "@/components/admin/ExportPDF";
 
 // For demo purposes, using static data - in a real app this would come from the database
 const bookingsByMonth = [
@@ -76,6 +77,10 @@ const AdminReports = () => {
       if (groundError) throw groundError;
       setActiveGrounds(groundCount || 0);
 
+      toast({
+        title: "Data Refreshed",
+        description: "Reports data has been updated"
+      });
     } catch (error) {
       console.error("Error fetching statistics:", error);
       toast({
@@ -86,32 +91,34 @@ const AdminReports = () => {
     }
   };
 
-  const generateReport = () => {
-    // In a real application, you would generate a CSV or PDF file here
-    toast({
-      title: "Report Generated",
-      description: "Your report has been generated and is ready to download.",
-    });
-  };
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Reports & Analytics</h1>
-        <Button onClick={generateReport}>
-          <Download className="h-4 w-4 mr-2" />
-          Export Report
-        </Button>
+        <div className="flex space-x-2">
+          <Button onClick={fetchStatistics} variant="outline">
+            <RefreshCcw className="h-4 w-4 mr-2" />
+            Refresh Data
+          </Button>
+          <ExportPDF 
+            contentId="reports-content"
+            fileName="sports-grounds-reports"
+            buttonText="Export Reports"
+          />
+        </div>
       </div>
-      <StatsOverview
-        totalUsers={totalUsers}
-        totalBookings={totalBookings}
-        totalRevenue={totalRevenue}
-        activeGrounds={activeGrounds}
-      />
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <BookingsBarChart data={bookingsByMonth} />
-        <SportPieChart data={sportDistribution} colors={COLORS} />
+      
+      <div id="reports-content">
+        <StatsOverview
+          totalUsers={totalUsers}
+          totalBookings={totalBookings}
+          totalRevenue={totalRevenue}
+          activeGrounds={activeGrounds}
+        />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+          <BookingsBarChart data={bookingsByMonth} />
+          <SportPieChart data={sportDistribution} colors={COLORS} />
+        </div>
       </div>
     </div>
   );

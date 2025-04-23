@@ -12,10 +12,12 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Edit, Trash2, Plus } from "lucide-react";
+import AddGroundForm from "@/components/admin/forms/AddGroundForm";
 
 const AdminGrounds = () => {
   const [grounds, setGrounds] = useState<any[]>([]);
   const [sports, setSports] = useState<any[]>([]);
+  const [isAddFormOpen, setIsAddFormOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -63,7 +65,7 @@ const AdminGrounds = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Manage Grounds</h1>
-        <Button>
+        <Button onClick={() => setIsAddFormOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
           Add Ground
         </Button>
@@ -117,6 +119,12 @@ const AdminGrounds = () => {
           </TableBody>
         </Table>
       </div>
+
+      <AddGroundForm
+        open={isAddFormOpen}
+        onOpenChange={setIsAddFormOpen}
+        onSuccess={fetchGrounds}
+      />
     </div>
   );
 };

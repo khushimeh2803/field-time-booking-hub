@@ -13,10 +13,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Trash2, Plus, Edit } from "lucide-react";
+import AddMembershipPlanForm from "@/components/admin/forms/AddMembershipPlanForm";
 
 const MembershipPlans = () => {
   const [membershipPlans, setMembershipPlans] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAddFormOpen, setIsAddFormOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -75,7 +77,7 @@ const MembershipPlans = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Membership Plans</h1>
-        <Button>
+        <Button onClick={() => setIsAddFormOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
           Add Plan
         </Button>
@@ -137,6 +139,12 @@ const MembershipPlans = () => {
           </Table>
         )}
       </Card>
+
+      <AddMembershipPlanForm
+        open={isAddFormOpen}
+        onOpenChange={setIsAddFormOpen}
+        onSuccess={fetchMembershipPlans}
+      />
     </div>
   );
 };

@@ -13,7 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { format } from "date-fns";
-import { Trash2 } from "lucide-react";
+import { Trash2, RefreshCcw } from "lucide-react";
 
 const ContactSubmissions = () => {
   const [submissions, setSubmissions] = useState<any[]>([]);
@@ -34,6 +34,10 @@ const ContactSubmissions = () => {
 
       if (error) throw error;
       setSubmissions(data || []);
+      toast({
+        title: "Data Refreshed",
+        description: "Contact submissions have been updated",
+      });
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -76,7 +80,10 @@ const ContactSubmissions = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Contact Form Submissions</h1>
-        <Button onClick={fetchSubmissions}>Refresh Data</Button>
+        <Button onClick={fetchSubmissions} variant="outline">
+          <RefreshCcw className="h-4 w-4 mr-2" />
+          Refresh Data
+        </Button>
       </div>
 
       <Card className="overflow-hidden">

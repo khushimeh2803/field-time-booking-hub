@@ -2,22 +2,20 @@
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import AdminLayout from "@/components/admin/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Download, Users, Calendar, DollarSign, TrendingUp, Building2, MessageSquare } from "lucide-react";
+import { Users, Calendar, DollarSign, Building2 } from "lucide-react";
 import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  Legend, 
-  ResponsiveContainer,
   LineChart,
-  Line
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer
 } from "recharts";
+import ExportPDF from "@/components/admin/ExportPDF";
 
 // Demo data - in a real app would come from database
 const bookingsTrend = [
@@ -35,7 +33,6 @@ const AdminDashboard = () => {
   const [totalBookings, setTotalBookings] = useState(0);
   const [totalRevenue, setTotalRevenue] = useState(0);
   const [totalGrounds, setTotalGrounds] = useState(0);
-  const [totalReviews, setTotalReviews] = useState(0);
   const [recentBookings, setRecentBookings] = useState<any[]>([]);
   const { toast } = useToast();
 
@@ -107,18 +104,24 @@ const AdminDashboard = () => {
   };
 
   return (
-    <AdminLayout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-          <Button onClick={() => fetchDashboardStats()}>
-            <Download className="h-4 w-4 mr-2" />
-            Export Dashboard Data
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+        <div className="flex space-x-2">
+          <Button onClick={() => fetchDashboardStats()} variant="outline">
+            Refresh Data
           </Button>
+          <ExportPDF 
+            contentId="dashboard-content"
+            fileName="dashboard-report"
+            buttonText="Export Dashboard"
+          />
         </div>
+      </div>
 
+      <div id="dashboard-content">
         {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Users</CardTitle>
@@ -225,7 +228,7 @@ const AdminDashboard = () => {
           </Card>
         </div>
       </div>
-    </AdminLayout>
+    </div>
   );
 };
 
