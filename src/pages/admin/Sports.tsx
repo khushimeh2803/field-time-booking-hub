@@ -1,18 +1,11 @@
-
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import AddSportForm from "@/components/admin/forms/AddSportForm";
+import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
 
 const AdminSports = () => {
   const [sports, setSports] = useState<any[]>([]);
@@ -40,6 +33,16 @@ const AdminSports = () => {
       });
     }
   };
+
+  const handleRealtimeSport = useCallback((payload: any) => {
+    console.log("Realtime sport update:", payload);
+    fetchSports(); // Refresh sports list when changes occur
+  }, []);
+
+  useRealtimeSubscription({
+    table: 'sports',
+    onEvent: handleRealtimeSport,
+  });
 
   return (
     <div className="space-y-6">

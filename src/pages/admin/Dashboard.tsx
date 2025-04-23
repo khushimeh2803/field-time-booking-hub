@@ -1,32 +1,10 @@
-
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Calendar, DollarSign, Building2 } from "lucide-react";
-import { 
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer
-} from "recharts";
 import ExportPDF from "@/components/admin/ExportPDF";
-
-// Demo data - in a real app would come from database
-const bookingsTrend = [
-  { name: 'Mon', bookings: 12 },
-  { name: 'Tue', bookings: 19 },
-  { name: 'Wed', bookings: 15 },
-  { name: 'Thu', bookings: 22 },
-  { name: 'Fri', bookings: 30 },
-  { name: 'Sat', bookings: 28 },
-  { name: 'Sun', bookings: 25 },
-];
+import StatsOverview from "@/components/admin/reports/StatsOverview";
+import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
 
 const AdminDashboard = () => {
   const [totalUsers, setTotalUsers] = useState(0);
@@ -102,6 +80,26 @@ const AdminDashboard = () => {
       });
     }
   };
+
+  const handleRealtimeBooking = useCallback((payload: any) => {
+    console.log("Realtime booking update:", payload);
+    fetchDashboardStats(); // Refresh all stats when a booking changes
+  }, []);
+
+  const handleRealtimeMembership = useCallback((payload: any) => {
+    console.log("Realtime membership update:", payload);
+    fetchDashboardStats(); // Refresh all stats when a membership changes
+  }, []);
+
+  useRealtimeSubscription({
+    table: 'bookings',
+    onEvent: handleRealtimeBooking,
+  });
+
+  useRealtimeSubscription({
+    table: 'user_memberships',
+    onEvent: handleRealtimeMembership,
+  });
 
   return (
     <div className="space-y-6">

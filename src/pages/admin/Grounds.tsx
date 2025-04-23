@@ -1,18 +1,11 @@
-
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Edit, Trash2, Plus } from "lucide-react";
 import AddGroundForm from "@/components/admin/forms/AddGroundForm";
+import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
 
 const AdminGrounds = () => {
   const [grounds, setGrounds] = useState<any[]>([]);
@@ -60,6 +53,16 @@ const AdminGrounds = () => {
     const sport = sports.find(s => s.id === sportId);
     return sport ? sport.name : 'Unknown';
   };
+
+  const handleRealtimeGround = useCallback((payload: any) => {
+    console.log("Realtime ground update:", payload);
+    fetchGrounds(); // Refresh grounds list when changes occur
+  }, []);
+
+  useRealtimeSubscription({
+    table: 'grounds',
+    onEvent: handleRealtimeGround,
+  });
 
   return (
     <div className="space-y-6">
