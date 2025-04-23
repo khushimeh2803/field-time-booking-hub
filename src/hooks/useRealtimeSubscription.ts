@@ -20,36 +20,42 @@ export const useRealtimeSubscription = ({
     let channel: RealtimeChannel;
 
     const setupSubscription = async () => {
-      // Create a channel with a specific name to avoid conflicts
+      // Create a unique channel for each table
       channel = supabase.channel(`realtime:${table}`);
 
-      // Add event listeners for each specified event type
+      // Add listeners for each event type
       events.forEach((event) => {
         channel = channel.on(
           'postgres_changes',
-          { 
-            event: event, 
-            schema: 'public', 
-            table: table 
+          {
+            event,
+            schema: 'public',
+            table,
           },
-          (payload) => {
+          (payload: RealtimePostgresChangesPayload<any>) => {
             console.log(`Realtime ${event} event on ${table}:`, payload);
-            if (onEvent) onEvent(payload);
+            onEvent?.(payload);
           }
         );
       });
 
-      // Subscribe to the channel and handle connection status
+      // Subscribe to the channel
       await channel.subscribe((status) => {
-        console.log(`Realtime subscription status for ${table}:`, status);
+        if (status === 'SUBSCRIBED') {
+          console.log(`Successfully subscribed to ${table}`);
+        } else if (status === 'CLOSED') {
+          console.log(`Subscription closed for ${table}`);
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error(`Error subscribing to ${table}`);
+        }
       });
     };
 
-    setupSubscription();
+    setupSubscription().catch(console.error);
 
-    // Cleanup function to remove the channel when component unmounts
     return () => {
       if (channel) {
+        console.log(`Cleaning up subscription for ${table}`);
         supabase.removeChannel(channel);
       }
     };

@@ -7,6 +7,7 @@ import StatsOverview from "@/components/admin/reports/StatsOverview";
 import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
 import WeeklyBookingTrend from "@/components/admin/reports/WeeklyBookingTrend";
 import RecentBookingsList from "@/components/admin/reports/RecentBookingsList";
+import { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 
 // Sample data for bookings trend
 const bookingsTrend = [
@@ -27,12 +28,9 @@ const AdminDashboard = () => {
   const [recentBookings, setRecentBookings] = useState<any[]>([]);
   const { toast } = useToast();
 
-  useEffect(() => {
-    fetchDashboardStats();
-  }, []);
-
-  const fetchDashboardStats = async () => {
+  const fetchDashboardStats = useCallback(async () => {
     try {
+      console.log("Fetching dashboard stats...");
       // Get users count
       const { count: userCount, error: userError } = await supabase
         .from('profiles')
@@ -41,23 +39,16 @@ const AdminDashboard = () => {
       if (userError) throw userError;
       setTotalUsers(userCount || 0);
       
-      // Get bookings count
-      const { count: bookingCount, error: bookingError } = await supabase
+      // Get bookings count and total revenue
+      const { data: bookingsData, error: bookingError } = await supabase
         .from('bookings')
-        .select('id', { count: 'exact', head: true });
+        .select('id, total_amount');
         
       if (bookingError) throw bookingError;
-      setTotalBookings(bookingCount || 0);
       
-      // Get total revenue
-      const { data: revenueData, error: revenueError } = await supabase
-        .from('bookings')
-        .select('total_amount');
-        
-      if (revenueError) throw revenueError;
+      setTotalBookings(bookingsData?.length || 0);
       
-      // Convert the numeric total_amount to a number for calculation
-      const totalAmount = revenueData?.reduce((sum, booking) => {
+      const totalAmount = bookingsData?.reduce((sum, booking) => {
         const amount = typeof booking.total_amount === 'string' 
           ? parseFloat(booking.total_amount) 
           : booking.total_amount;
@@ -84,7 +75,7 @@ const AdminDashboard = () => {
       if (recentBookingsError) throw recentBookingsError;
       setRecentBookings(bookings || []);
       
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching dashboard stats:", error);
       toast({
         variant: "destructive",
@@ -92,26 +83,45 @@ const AdminDashboard = () => {
         description: "Failed to load dashboard data",
       });
     }
-  };
+  }, [toast]);
 
-  const handleRealtimeBooking = useCallback((payload: any) => {
+  // Initial fetch
+  useEffect(() => {
+    fetchDashboardStats();
+  }, [fetchDashboardStats]);
+
+  // Handle real-time updates for bookings
+  const handleBookingChange = useCallback((payload: RealtimePostgresChangesPayload<any>) => {
     console.log("Realtime booking update:", payload);
     fetchDashboardStats();
-  }, []);
+  }, [fetchDashboardStats]);
 
-  const handleRealtimeMembership = useCallback((payload: any) => {
-    console.log("Realtime membership update:", payload);
+  // Handle real-time updates for user profiles
+  const handleProfileChange = useCallback((payload: RealtimePostgresChangesPayload<any>) => {
+    console.log("Realtime profile update:", payload);
     fetchDashboardStats();
-  }, []);
+  }, [fetchDashboardStats]);
 
+  // Handle real-time updates for grounds
+  const handleGroundChange = useCallback((payload: RealtimePostgresChangesPayload<any>) => {
+    console.log("Realtime ground update:", payload);
+    fetchDashboardStats();
+  }, [fetchDashboardStats]);
+
+  // Set up real-time subscriptions
   useRealtimeSubscription({
     table: 'bookings',
-    onEvent: handleRealtimeBooking,
+    onEvent: handleBookingChange,
   });
 
   useRealtimeSubscription({
-    table: 'user_memberships',
-    onEvent: handleRealtimeMembership,
+    table: 'profiles',
+    onEvent: handleProfileChange,
+  });
+
+  useRealtimeSubscription({
+    table: 'grounds',
+    onEvent: handleGroundChange,
   });
 
   return (
