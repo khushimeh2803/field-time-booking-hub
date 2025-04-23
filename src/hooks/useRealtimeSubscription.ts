@@ -20,12 +20,13 @@ export const useRealtimeSubscription = ({
     let channel: RealtimeChannel;
 
     const setupSubscription = async () => {
-      // Create a channel with table name for better identification
+      // Create a channel
       channel = supabase.channel(`realtime:${table}`);
-
-      // Add listeners for each event type individually
+      
+      // Add event listeners for postgres changes
       events.forEach((event) => {
-        channel.on(
+        // Use the correct signature for the on method
+        channel = channel.on(
           'postgres_changes', 
           { 
             event, 
@@ -39,7 +40,7 @@ export const useRealtimeSubscription = ({
         );
       });
 
-      // Subscribe to the channel after adding all listeners
+      // Subscribe to the channel
       await channel.subscribe((status) => {
         console.log(`Realtime subscription status for ${table}:`, status);
       });
