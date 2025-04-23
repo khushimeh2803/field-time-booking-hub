@@ -25,16 +25,13 @@ export const useRealtimeSubscription = ({
       
       // Add event listeners for postgres changes
       events.forEach((event) => {
-        // Properly type the event configuration
-        const eventConfig = {
-          event: event,
-          schema: 'public',
-          table: table
-        };
-        
         channel = channel.on(
-          'postgres_changes',
-          eventConfig,
+          'postgres_changes', 
+          { 
+            event: event, 
+            schema: 'public', 
+            table: table 
+          }, 
           (payload) => {
             console.log(`Realtime ${event} event on ${table}:`, payload);
             if (onEvent) onEvent(payload);
