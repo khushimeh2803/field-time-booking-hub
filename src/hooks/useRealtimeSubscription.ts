@@ -23,13 +23,12 @@ export const useRealtimeSubscription = ({
       channel = supabase.channel(`realtime_${table}`);
 
       events.forEach((event) => {
-        channel = channel.on(
-          'postgres_changes',
+        channel.on('postgres_changes', 
           {
             event,
             schema: 'public',
             table,
-          },
+          }, 
           (payload) => {
             console.log(`Realtime ${event} event on ${table}:`, payload);
             if (onEvent) onEvent(payload);
