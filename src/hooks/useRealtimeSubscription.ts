@@ -1,13 +1,13 @@
 
 import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { RealtimeChannel } from '@supabase/supabase-js';
+import { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
 type RealtimeEvent = 'INSERT' | 'UPDATE' | 'DELETE';
 
 interface UseRealtimeSubscriptionProps {
   table: string;
-  onEvent?: (payload: any) => void;
+  onEvent?: (payload: RealtimePostgresChangesPayload<any>) => void;
   events?: RealtimeEvent[];
 }
 
@@ -20,27 +20,27 @@ export const useRealtimeSubscription = ({
     let channel: RealtimeChannel;
 
     const setupSubscription = async () => {
-      // Create a new channel for this table
+      // Create a channel with table name for better identification
       channel = supabase.channel(`realtime:${table}`);
 
-      // Set up listeners for each event type
-      events.forEach((event) => {
-        channel = channel.on(
-          'postgres_changes',
-          {
-            event: event,
-            schema: 'public',
-            table: table,
-          },
+      // Build channel configuration with listeners for each event type
+      const channelWithListeners = events.reduce((ch, event) => {
+        return ch.on(
+          'postgres_changes', 
+          { 
+            event, 
+            schema: 'public', 
+            table 
+          }, 
           (payload) => {
             console.log(`Realtime ${event} event on ${table}:`, payload);
             if (onEvent) onEvent(payload);
           }
         );
-      });
+      }, channel);
 
-      // Subscribe to the channel
-      await channel.subscribe((status) => {
+      // Subscribe to the configured channel
+      await channelWithListeners.subscribe((status) => {
         console.log(`Realtime subscription status for ${table}:`, status);
       });
     };
