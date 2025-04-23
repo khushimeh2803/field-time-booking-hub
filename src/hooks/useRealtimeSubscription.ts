@@ -24,9 +24,8 @@ export const useRealtimeSubscription = ({
       channel = supabase.channel(`realtime:${table}`);
       
       // Add event listeners for postgres changes
-      events.forEach((event) => {
-        // Use the correct signature for the on method
-        channel = channel.on(
+      for (const event of events) {
+        channel.on(
           'postgres_changes', 
           { 
             event, 
@@ -38,7 +37,7 @@ export const useRealtimeSubscription = ({
             if (onEvent) onEvent(payload);
           }
         );
-      });
+      }
 
       // Subscribe to the channel
       await channel.subscribe((status) => {
