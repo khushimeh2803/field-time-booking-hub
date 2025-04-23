@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -5,6 +6,34 @@ import { Button } from "@/components/ui/button";
 import ExportPDF from "@/components/admin/ExportPDF";
 import StatsOverview from "@/components/admin/reports/StatsOverview";
 import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { 
+  Users, 
+  Calendar as CalendarIcon, 
+  DollarSign, 
+  Building2 
+} from "lucide-react";
+import { 
+  ResponsiveContainer, 
+  LineChart, 
+  Line, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  Legend 
+} from "recharts";
+
+// Sample data for bookings trend
+const bookingsTrend = [
+  { name: 'Mon', bookings: 4 },
+  { name: 'Tue', bookings: 7 },
+  { name: 'Wed', bookings: 5 },
+  { name: 'Thu', bookings: 8 },
+  { name: 'Fri', bookings: 12 },
+  { name: 'Sat', bookings: 14 },
+  { name: 'Sun', bookings: 10 },
+];
 
 const AdminDashboard = () => {
   const [totalUsers, setTotalUsers] = useState(0);
@@ -133,7 +162,7 @@ const AdminDashboard = () => {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Bookings</CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <CalendarIcon className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{totalBookings}</div>

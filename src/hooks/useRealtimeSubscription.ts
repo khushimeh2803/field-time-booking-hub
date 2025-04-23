@@ -26,7 +26,7 @@ export const useRealtimeSubscription = ({
       // Subscribe to specified events
       events.forEach((event) => {
         channel = channel.on(
-          'postgres_changes',
+          'postgres_changes', // This is the correct event type for Supabase Realtime
           {
             event,
             schema: 'public',
@@ -53,4 +53,3 @@ export const useRealtimeSubscription = ({
     };
   }, [table, onEvent, events]);
 };
-
