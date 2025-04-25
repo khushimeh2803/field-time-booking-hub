@@ -20,38 +20,42 @@ export const useRealtimeSubscription = ({
     let channel: RealtimeChannel;
 
     const setupSubscription = async () => {
-      // Create a unique channel for each table
-      channel = supabase.channel(`realtime:${table}`);
+      try {
+        // Create a unique channel for each table
+        channel = supabase.channel(`realtime:${table}`);
 
-      // Add listeners for each event type
-      events.forEach((event) => {
-        channel = channel.on(
-          'postgres_changes',
-          {
-            event,
-            schema: 'public',
-            table,
-          },
-          (payload: RealtimePostgresChangesPayload<any>) => {
-            console.log(`Realtime ${event} event on ${table}:`, payload);
-            onEvent?.(payload);
+        // Add listeners for each event type
+        events.forEach((event) => {
+          channel = channel.on(
+            'postgres_changes',
+            {
+              event,
+              schema: 'public',
+              table,
+            } as any, // Type assertion to bypass TypeScript error
+            (payload: RealtimePostgresChangesPayload<any>) => {
+              console.log(`Realtime ${event} event on ${table}:`, payload);
+              onEvent?.(payload);
+            }
+          );
+        });
+
+        // Subscribe to the channel
+        await channel.subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            console.log(`Successfully subscribed to ${table}`);
+          } else if (status === 'CLOSED') {
+            console.log(`Subscription closed for ${table}`);
+          } else if (status === 'CHANNEL_ERROR') {
+            console.error(`Error subscribing to ${table}`);
           }
-        );
-      });
-
-      // Subscribe to the channel
-      await channel.subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          console.log(`Successfully subscribed to ${table}`);
-        } else if (status === 'CLOSED') {
-          console.log(`Subscription closed for ${table}`);
-        } else if (status === 'CHANNEL_ERROR') {
-          console.error(`Error subscribing to ${table}`);
-        }
-      });
+        });
+      } catch (error) {
+        console.error(`Error setting up realtime subscription for ${table}:`, error);
+      }
     };
 
-    setupSubscription().catch(console.error);
+    setupSubscription();
 
     return () => {
       if (channel) {
@@ -61,4 +65,3 @@ export const useRealtimeSubscription = ({
     };
   }, [table, onEvent, events]);
 };
-
