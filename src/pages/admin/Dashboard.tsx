@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -42,7 +43,8 @@ const AdminDashboard = () => {
       // Get bookings count and total revenue
       const { data: bookingsData, error: bookingError } = await supabase
         .from('bookings')
-        .select('id, total_amount');
+        .select('id, total_amount, booking_date, status, ground_id, user_id')
+        .order('created_at', { ascending: false });
         
       if (bookingError) throw bookingError;
       
@@ -66,14 +68,14 @@ const AdminDashboard = () => {
       setTotalGrounds(groundCount || 0);
       
       // Get recent bookings
-      const { data: bookings, error: recentBookingsError } = await supabase
+      const { data: recentBookingsData, error: recentBookingsError } = await supabase
         .from('bookings')
         .select('id, booking_date, status, total_amount, ground_id, user_id')
         .order('created_at', { ascending: false })
         .limit(5);
         
       if (recentBookingsError) throw recentBookingsError;
-      setRecentBookings(bookings || []);
+      setRecentBookings(recentBookingsData || []);
       
     } catch (error: any) {
       console.error("Error fetching dashboard stats:", error);
@@ -93,8 +95,12 @@ const AdminDashboard = () => {
   // Handle real-time updates for bookings
   const handleBookingChange = useCallback((payload: RealtimePostgresChangesPayload<any>) => {
     console.log("Realtime booking update:", payload);
+    toast({
+      title: "Booking Update",
+      description: `A booking was ${payload.eventType.toLowerCase()}d`,
+    });
     fetchDashboardStats();
-  }, [fetchDashboardStats]);
+  }, [fetchDashboardStats, toast]);
 
   // Handle real-time updates for user profiles
   const handleProfileChange = useCallback((payload: RealtimePostgresChangesPayload<any>) => {

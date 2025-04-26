@@ -39,7 +39,7 @@ const Home = () => {
             ].map((sport) => (
               <Link 
                 key={sport.name} 
-                to={`/sports/${sport.name.toLowerCase()}`}
+                to={`/grounds?sport=${sport.name.toLowerCase()}`}
                 className="group relative rounded-xl overflow-hidden shadow-lg h-60 hover:shadow-xl transition-all duration-300"
               >
                 <img 

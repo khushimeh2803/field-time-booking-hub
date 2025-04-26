@@ -1,6 +1,6 @@
 
-import { useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -26,44 +26,21 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { format } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
-// Simulated ground data (would fetch from backend in real app)
-const getGround = (id: string) => {
-  return {
-    id: parseInt(id),
-    name: "Green Valley Stadium",
-    sport: "football",
-    price: 80,
-    images: [
-      "https://images.unsplash.com/photo-1487466365202-1afdb86c764e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1752&q=80",
-      "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1740&q=80",
-      "https://images.unsplash.com/photo-1550881111-7cfde14b8831?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1740&q=80"
-    ],
-    address: "123 Sports Avenue, Stadium District",
-    rating: 4.8,
-    totalRatings: 156,
-    type: "Outdoor Grass",
-    capacity: "22 players",
-    amenities: [
-      { name: "Changing Rooms", icon: <Shirt /> },
-      { name: "Showers", icon: <Droplets /> },
-      { name: "Floodlights", icon: <LampFloor /> },
-      { name: "Parking", icon: <Car /> },
-      { name: "Spectator Seating", icon: <Users /> },
-      { name: "Scoreboard", icon: <MonitorSmartphone /> },
-      { name: "Cafeteria", icon: <Utensils /> }
-    ],
-    availability: "8:00 AM - 10:00 PM",
-    description: "Green Valley Stadium is a premier outdoor football facility featuring a full-size natural grass pitch maintained to professional standards. The ground is suitable for 11-a-side matches with full markings and goal posts. Floodlights allow for evening play, and spectator seating is available for tournaments and friendly matches. The facility includes clean changing rooms, showers, and convenient parking for players and spectators.",
-    reviews: [
-      { id: 1, user: "John D.", rating: 5, comment: "Excellent pitch, well-maintained grass and great facilities. Will definitely book again.", date: "2023-08-15" },
-      { id: 2, user: "Sarah M.", rating: 4, comment: "Good facilities and helpful staff. The only downside was limited parking on busy days.", date: "2023-07-22" },
-      { id: 3, user: "David K.", rating: 5, comment: "Perfect for our weekend league matches. The changing rooms are clean and the pitch is top quality.", date: "2023-06-30" }
-    ]
-  };
+// Map for amenity icons
+const amenityIcons: Record<string, JSX.Element> = {
+  "Changing Rooms": <Shirt />,
+  "Showers": <Droplets />,
+  "Floodlights": <LampFloor />,
+  "Parking": <Car />,
+  "Spectator Seating": <Users />,
+  "Scoreboard": <MonitorSmartphone />,
+  "Cafeteria": <Utensils />,
 };
 
-// Simulated available time slots
+// Simulated available time slots (would fetch from backend in real app)
 const availableTimeSlots = [
   { id: 1, time: "08:00 - 09:00", available: true },
   { id: 2, time: "09:00 - 10:00", available: true },
@@ -83,11 +60,109 @@ const availableTimeSlots = [
 
 const GroundDetails = () => {
   const { id } = useParams<{ id: string }>();
-  const ground = getGround(id || "1");
+  const navigate = useNavigate();
+  const { toast } = useToast();
   
+  const [ground, setGround] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [selectedTimeSlots, setSelectedTimeSlots] = useState<number[]>([]);
   const [activeImage, setActiveImage] = useState(0);
+  const [activeMembership, setActiveMembership] = useState<any>(null);
+  const [discountPercentage, setDiscountPercentage] = useState<number>(0);
+
+  // Fetch ground details and user's active membership
+  useEffect(() => {
+    const fetchGroundDetails = async () => {
+      if (!id) return;
+      
+      try {
+        setLoading(true);
+        
+        // Fetch ground details
+        const { data: groundData, error: groundError } = await supabase
+          .from('grounds')
+          .select(`
+            *,
+            sport_id(id, name)
+          `)
+          .eq('id', id)
+          .single();
+          
+        if (groundError) throw groundError;
+        if (!groundData) {
+          toast({
+            title: "Ground not found",
+            description: "The requested ground could not be found.",
+            variant: "destructive"
+          });
+          navigate('/grounds');
+          return;
+        }
+        
+        // Check if user has an active membership
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: membershipData } = await supabase
+            .from('user_memberships')
+            .select(`
+              *,
+              plan_id(id, name, discount_percentage)
+            `)
+            .eq('user_id', user.id)
+            .gte('end_date', new Date().toISOString())
+            .order('end_date', { ascending: false })
+            .limit(1)
+            .single();
+          
+          if (membershipData) {
+            setActiveMembership(membershipData);
+            setDiscountPercentage(membershipData.plan_id.discount_percentage || 0);
+          }
+        }
+        
+        // Format the ground data
+        const formattedGround = {
+          id: groundData.id,
+          name: groundData.name,
+          sport: groundData.sport_id?.name || 'Unknown',
+          price: groundData.price_per_hour,
+          images: groundData.images && groundData.images.length > 0 
+            ? groundData.images 
+            : ['https://images.unsplash.com/photo-1487466365202-1afdb86c764e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1752&q=80'],
+          address: groundData.address,
+          rating: 4.8, // Default rating
+          totalRatings: 156, // Default number of ratings
+          type: groundData.amenities && groundData.amenities.includes("Indoor") ? "Indoor" : "Outdoor",
+          capacity: `${groundData.capacity} players`,
+          amenities: groundData.amenities?.map((amenity: string) => ({
+            name: amenity,
+            icon: amenityIcons[amenity] || <Users />
+          })) || [],
+          availability: `${groundData.opening_time} - ${groundData.closing_time}`,
+          description: groundData.description || "No description available.",
+          // Default reviews - could be implemented with a real reviews system
+          reviews: [
+            { id: 1, user: "John D.", rating: 5, comment: "Excellent pitch, well-maintained and great facilities.", date: "2023-08-15" },
+            { id: 2, user: "Sarah M.", rating: 4, comment: "Good facilities and helpful staff.", date: "2023-07-22" }
+          ]
+        };
+        
+        setGround(formattedGround);
+      } catch (error) {
+        console.error("Error fetching ground details:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load ground details. Please try again later.",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchGroundDetails();
+  }, [id, toast, navigate]);
 
   const handleTimeSlotSelect = (slotId: number) => {
     if (selectedTimeSlots.includes(slotId)) {
@@ -98,8 +173,41 @@ const GroundDetails = () => {
   };
 
   const calculateTotalPrice = () => {
-    return ground.price * selectedTimeSlots.length;
+    if (!ground) return 0;
+    
+    const subtotal = ground.price * selectedTimeSlots.length;
+    
+    // Apply membership discount if available
+    if (discountPercentage > 0) {
+      const discountAmount = subtotal * (discountPercentage / 100);
+      return subtotal - discountAmount;
+    }
+    
+    return subtotal;
   };
+
+  if (loading) {
+    return (
+      <MainLayout>
+        <div className="container mx-auto px-4 py-12 flex justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (!ground) {
+    return (
+      <MainLayout>
+        <div className="container mx-auto px-4 py-12 text-center">
+          <h2 className="text-2xl font-bold mb-4">Ground not found</h2>
+          <Link to="/grounds" className="text-primary hover:underline">
+            Return to grounds listing
+          </Link>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
@@ -125,7 +233,7 @@ const GroundDetails = () => {
                 />
               </div>
               <div className="flex gap-2 overflow-x-auto pb-2">
-                {ground.images.map((image, index) => (
+                {ground.images.map((image: string, index: number) => (
                   <button
                     key={index}
                     onClick={() => setActiveImage(index)}
@@ -303,10 +411,24 @@ const GroundDetails = () => {
                   <span>Number of hours</span>
                   <span>{selectedTimeSlots.length}</span>
                 </div>
+                
+                {activeMembership && discountPercentage > 0 && (
+                  <div className="flex justify-between mb-2 text-green-600">
+                    <span>Membership discount ({discountPercentage}%)</span>
+                    <span>-${(ground.price * selectedTimeSlots.length * discountPercentage / 100).toFixed(2)}</span>
+                  </div>
+                )}
+                
                 <div className="flex justify-between font-bold text-lg mt-4">
                   <span>Total</span>
-                  <span>${calculateTotalPrice()}</span>
+                  <span>${calculateTotalPrice().toFixed(2)}</span>
                 </div>
+                
+                {activeMembership && (
+                  <div className="mt-2 text-sm text-green-600">
+                    Your {activeMembership.plan_id.name} membership applied!
+                  </div>
+                )}
               </div>
               
               {/* Book Now Button */}
@@ -314,9 +436,10 @@ const GroundDetails = () => {
                 className="w-full bg-primary hover:bg-primary/90"
                 disabled={selectedTimeSlots.length === 0}
                 onClick={() => {
-                  // In a real app, you would handle the booking here
                   if (selectedTimeSlots.length > 0) {
-                    window.location.href = `/booking?groundId=${ground.id}&date=${selectedDate?.toISOString()}&slots=${selectedTimeSlots.join(',')}`;
+                    // Include membership ID in the booking parameters if available
+                    const membershipParam = activeMembership ? `&membershipId=${activeMembership.id}` : '';
+                    window.location.href = `/booking?groundId=${ground.id}&date=${selectedDate?.toISOString()}&slots=${selectedTimeSlots.join(',')}${membershipParam}`;
                   }
                 }}
               >
