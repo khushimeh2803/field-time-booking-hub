@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,7 +19,19 @@ const Booking = () => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [selectedStartTime, setSelectedStartTime] = useState<string>('');
   const [selectedEndTime, setSelectedEndTime] = useState<string>('');
+  const [userId, setUserId] = useState<string | null>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    const getCurrentUser = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (data.session?.user) {
+        setUserId(data.session.user.id);
+      }
+    };
+    
+    getCurrentUser();
+  }, []);
 
   const validateBookingTime = () => {
     if (!selectedDate || !selectedStartTime || !selectedEndTime) {
@@ -53,6 +66,15 @@ const Booking = () => {
   const handleBooking = async () => {
     if (!validateBookingTime()) return;
 
+    if (!userId) {
+      toast({
+        title: "Authentication Error",
+        description: "You must be logged in to make a booking",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
       const { data, error } = await supabase
         .from('bookings')
@@ -66,7 +88,7 @@ const Booking = () => {
             payment_status: paymentStatus,
             promo_code: promoCode,
             membership_applied: membershipApplied,
-            user_id: supabase.auth.user()?.id,
+            user_id: userId,
           },
         ]);
 
