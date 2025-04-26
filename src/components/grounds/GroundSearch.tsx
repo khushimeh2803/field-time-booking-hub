@@ -58,7 +58,7 @@ const GroundSearch = ({
               <SelectValue placeholder="All Sports" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Sports</SelectItem>
+              <SelectItem value="all">All Sports</SelectItem>
               {sports.map(sport => (
                 <SelectItem key={sport.id} value={sport.name.toLowerCase()}>
                   {sport.name}

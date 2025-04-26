@@ -10,7 +10,7 @@ import GroundsList from "@/components/grounds/GroundsList";
 const Grounds = () => {
   const location = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedSport, setSelectedSport] = useState<string>("");
+  const [selectedSport, setSelectedSport] = useState<string>("all");
   const [priceRange, setPriceRange] = useState<string>("all");
   const [filteredGrounds, setFilteredGrounds] = useState<any[]>([]);
   const [grounds, setGrounds] = useState<any[]>([]);
@@ -88,7 +88,7 @@ const Grounds = () => {
   useEffect(() => {
     let filtered = grounds;
     
-    if (selectedSport) {
+    if (selectedSport && selectedSport !== 'all') {
       filtered = filtered.filter(ground => ground.sport === selectedSport);
     }
     
@@ -125,7 +125,7 @@ const Grounds = () => {
         <div className="container mx-auto px-4 text-center">
           <h1 className="text-4xl font-bold mb-4">Sports Grounds</h1>
           <p className="text-xl max-w-2xl mx-auto">
-            {selectedSport ? `Browse available ${selectedSport} facilities` : "Browse all available sports facilities"}
+            {selectedSport && selectedSport !== 'all' ? `Browse available ${selectedSport} facilities` : "Browse all available sports facilities"}
           </p>
         </div>
       </section>
@@ -148,7 +148,7 @@ const Grounds = () => {
             <p className="text-muted-foreground">
               {isLoading 
                 ? "Loading grounds..." 
-                : `Showing ${filteredGrounds.length} grounds ${selectedSport ? `for ${selectedSport}` : ""}`
+                : `Showing ${filteredGrounds.length} grounds ${selectedSport && selectedSport !== 'all' ? `for ${selectedSport}` : ""}`
               }
             </p>
           </div>
