@@ -1,99 +1,87 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MapPin, Calendar, Clock, Star as StarIcon, X, Check, Filter } from "lucide-react";
+import { MapPin, Calendar, Clock, Star as StarIcon, Filter } from "lucide-react";
 import { format } from "date-fns";
-
-// Simulated bookings data
-const bookingsData = [
-  {
-    id: 1,
-    groundName: "Green Valley Stadium",
-    sport: "football",
-    date: new Date("2023-09-15"),
-    timeSlots: ["18:00 - 19:00", "19:00 - 20:00"],
-    price: 160,
-    status: "confirmed",
-    image: "https://images.unsplash.com/photo-1487466365202-1afdb86c764e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1752&q=80",
-    address: "123 Sports Avenue, Stadium District",
-    paymentMethod: "Pay at Venue",
-    completed: true,
-    rated: true,
-    rating: 4
-  },
-  {
-    id: 2,
-    groundName: "Central Sports Hub",
-    sport: "football",
-    date: new Date("2023-09-22"),
-    timeSlots: ["10:00 - 11:00"],
-    price: 65,
-    status: "confirmed",
-    image: "https://images.unsplash.com/photo-1516132006923-6cf348e5dee2?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1740&q=80",
-    address: "45 Central Park Road, Downtown",
-    paymentMethod: "Credit Card",
-    completed: false,
-    rated: false,
-    rating: 0
-  },
-  {
-    id: 3,
-    groundName: "Cricket Oval",
-    sport: "cricket",
-    date: new Date("2023-09-18"),
-    timeSlots: ["14:00 - 15:00", "15:00 - 16:00", "16:00 - 17:00"],
-    price: 360,
-    status: "pending",
-    image: "https://images.unsplash.com/photo-1554178286-2d4133387b5c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1740&q=80",
-    address: "256 Boundary Road, Sports Village",
-    paymentMethod: "Pay at Venue",
-    completed: false,
-    rated: false,
-    rating: 0
-  },
-  {
-    id: 4,
-    groundName: "Elite Badminton Center",
-    sport: "badminton",
-    date: new Date("2023-09-10"),
-    timeSlots: ["17:00 - 18:00", "18:00 - 19:00"],
-    price: 70,
-    status: "confirmed",
-    image: "https://images.unsplash.com/photo-1628891890467-b79f2c8ba9dc?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1740&q=80",
-    address: "47 Racquet Avenue, Sportsville",
-    paymentMethod: "Credit Card",
-    completed: true,
-    rated: false,
-    rating: 0
-  }
-];
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const MyBookings = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSport, setSelectedSport] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("");
-  const [bookings, setBookings] = useState(bookingsData);
+  const [bookings, setBookings] = useState<any[]>([]);
   const [showFilters, setShowFilters] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
-  // Filter bookings based on selected filters
+  useEffect(() => {
+    const fetchBookings = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data, error } = await supabase
+          .from('bookings')
+          .select(`
+            *,
+            grounds (
+              name,
+              address,
+              images,
+              sport_id (name)
+            )
+          `)
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        const formattedBookings = data.map((booking: any) => ({
+          id: booking.id,
+          groundName: booking.grounds?.name || 'Unknown Ground',
+          sport: booking.grounds?.sport_id?.name?.toLowerCase() || 'unknown',
+          date: new Date(booking.booking_date),
+          timeSlots: [`${booking.start_time} - ${booking.end_time}`],
+          price: booking.total_amount,
+          status: booking.status,
+          image: booking.grounds?.images?.[0] || 'https://images.unsplash.com/photo-1487466365202-1afdb86c764e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1752&q=80',
+          address: booking.grounds?.address || 'Address not available',
+          paymentMethod: booking.payment_status === 'paid' ? 'Paid' : 'Pending',
+          completed: new Date(booking.booking_date) < new Date(),
+          rated: false,
+          rating: 0
+        }));
+
+        setBookings(formattedBookings);
+      } catch (error: any) {
+        console.error('Error fetching bookings:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load your bookings",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBookings();
+  }, [toast]);
+
   const filteredBookings = bookings.filter(booking => {
-    // Filter by search term
     const matchesSearch = booking.groundName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          booking.address.toLowerCase().includes(searchTerm.toLowerCase());
     
-    // Filter by sport
     const matchesSport = !selectedSport || booking.sport === selectedSport;
     
-    // Filter by status
     const matchesStatus = !statusFilter || booking.status === statusFilter;
     
     return matchesSearch && matchesSport && matchesStatus;
   });
 
-  // Handle rating a booking
   const handleRateBooking = (bookingId: number, rating: number) => {
     setBookings(bookings.map(booking => 
       booking.id === bookingId 
@@ -102,9 +90,7 @@ const MyBookings = () => {
     ));
   };
 
-  // Handle requesting cancellation
   const handleCancellationRequest = (bookingId: number) => {
-    // In a real app, this would send a request to the backend
     alert("Cancellation request sent to admin. You will be notified once processed.");
   };
 
@@ -184,14 +170,12 @@ const MyBookings = () => {
             )}
           </div>
 
-          {/* Results Count */}
           <div className="mb-6">
             <p className="text-muted-foreground">
               Showing {filteredBookings.length} bookings
             </p>
           </div>
 
-          {/* Bookings List */}
           <div className="space-y-6">
             {filteredBookings.map((booking) => (
               <div key={booking.id} className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow">
@@ -298,7 +282,6 @@ const MyBookings = () => {
             ))}
           </div>
 
-          {/* Empty State */}
           {filteredBookings.length === 0 && (
             <div className="text-center py-16 bg-white rounded-xl shadow-md">
               <h3 className="text-xl font-semibold mb-2">No Bookings Found</h3>
