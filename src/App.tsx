@@ -9,6 +9,7 @@ import Sports from "./pages/Sports";
 import Grounds from "./pages/Grounds";
 import GroundDetails from "./pages/GroundDetails";
 import Booking from "./pages/Booking";
+import Payment from "./pages/Payment";
 import MyBookings from "./pages/MyBookings";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
@@ -45,6 +46,7 @@ const App = () => (
           <Route path="/grounds" element={<Grounds />} />
           <Route path="/grounds/:id" element={<GroundDetails />} />
           <Route path="/booking" element={<ProtectedRoute><Booking /></ProtectedRoute>} />
+          <Route path="/payment" element={<ProtectedRoute><Payment /></ProtectedRoute>} />
           <Route path="/my-bookings" element={<ProtectedRoute><MyBookings /></ProtectedRoute>} />
           <Route path="/signin" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
