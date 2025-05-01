@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { RadioGroup } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { CreditCard, Landmark } from "lucide-react";
 
@@ -11,25 +11,34 @@ interface PaymentModeSelectorProps {
 
 const PaymentModeSelector = ({ value, onChange }: PaymentModeSelectorProps) => {
   return (
-    <div className="mb-6">
-      <h3 className="font-medium text-lg mb-3">Payment Method</h3>
-      <RadioGroup value={value} onValueChange={onChange} className="space-y-4">
-        <div className="flex items-center space-x-2">
-          <RadioGroupItem value="venue" id="venue" />
-          <Label htmlFor="venue" className="flex items-center cursor-pointer">
-            <Landmark className="h-5 w-5 mr-2 text-muted-foreground" />
-            <span>Pay at Venue</span>
-          </Label>
+    <RadioGroup value={value} onValueChange={onChange} className="space-y-4">
+      <div className="flex items-center space-x-3 p-3 rounded-md hover:bg-gray-50 cursor-pointer" 
+           onClick={() => onChange("card")}>
+        <input 
+          type="radio" 
+          checked={value === "card"} 
+          onChange={() => {}} 
+          className="h-5 w-5 text-primary accent-primary" 
+        />
+        <div className="flex items-center">
+          <CreditCard className="h-5 w-5 mr-2 text-gray-600" />
+          <Label className="cursor-pointer">Credit/Debit Card</Label>
         </div>
-        <div className="flex items-center space-x-2">
-          <RadioGroupItem value="card" id="card" />
-          <Label htmlFor="card" className="flex items-center cursor-pointer">
-            <CreditCard className="h-5 w-5 mr-2 text-muted-foreground" />
-            <span>Credit/Debit Card</span>
-          </Label>
+      </div>
+      <div className="flex items-center space-x-3 p-3 rounded-md hover:bg-gray-50 cursor-pointer"
+           onClick={() => onChange("venue")}>
+        <input 
+          type="radio" 
+          checked={value === "venue"} 
+          onChange={() => {}} 
+          className="h-5 w-5 text-primary accent-primary" 
+        />
+        <div className="flex items-center">
+          <Landmark className="h-5 w-5 mr-2 text-gray-600" />
+          <Label className="cursor-pointer">Pay at Venue</Label>
         </div>
-      </RadioGroup>
-    </div>
+      </div>
+    </RadioGroup>
   );
 };
 

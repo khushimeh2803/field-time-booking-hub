@@ -7,29 +7,32 @@ interface BookingSummaryProps {
     date: string;
     time: string;
     address: string;
+    capacity?: number;
   };
 }
 
 const BookingSummary = ({ booking }: BookingSummaryProps) => {
   return (
-    <div className="bg-white rounded-lg border p-4 mb-6">
-      <h3 className="font-medium mb-2">Booking Summary</h3>
-      <div className="space-y-2">
-        <div className="grid grid-cols-2 gap-1">
-          <span className="text-muted-foreground">Ground:</span>
-          <span className="font-medium">{booking.groundName}</span>
-        </div>
-        <div className="grid grid-cols-2 gap-1">
-          <span className="text-muted-foreground">Date:</span>
-          <span>{booking.date}</span>
-        </div>
-        <div className="grid grid-cols-2 gap-1">
-          <span className="text-muted-foreground">Time:</span>
-          <span>{booking.time}</span>
-        </div>
-        <div className="grid grid-cols-2 gap-1">
-          <span className="text-muted-foreground">Address:</span>
-          <span className="text-sm">{booking.address}</span>
+    <div>
+      <h4 className="font-medium text-lg mb-3">{booking.groundName}</h4>
+      <p className="text-gray-600 mb-4">{booking.address}</p>
+      
+      <div className="bg-gray-50 rounded-md p-4">
+        <div className="space-y-3">
+          <div className="flex justify-between">
+            <span className="text-gray-600">Date:</span>
+            <span className="font-medium">{booking.date}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-gray-600">Time:</span>
+            <span className="font-medium">{booking.time}</span>
+          </div>
+          {booking.capacity && (
+            <div className="flex justify-between">
+              <span className="text-gray-600">Players:</span>
+              <span className="font-medium">{booking.capacity}</span>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -39,21 +39,12 @@ const Payment = () => {
 
   return (
     <MainLayout>
-      <section className="bg-gradient-to-r from-primary/90 to-secondary/90 text-white py-12">
-        <div className="container mx-auto px-4 text-center">
-          <h1 className="text-4xl font-bold mb-4">
-            {paymentComplete ? "Payment Complete" : "Complete Payment"}
-          </h1>
-          <p className="text-xl max-w-2xl mx-auto">
-            {paymentComplete 
-              ? "Thank you for your payment. Your booking is confirmed!" 
-              : "Review your booking details and complete the payment process."}
-          </p>
-        </div>
-      </section>
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold mb-8 text-blue-900">
+          {paymentComplete ? "Payment Complete" : "Complete Your Payment"}
+        </h1>
 
-      <div className="container mx-auto px-4 py-12">
-        <div className="max-w-3xl mx-auto">
+        <div className="mb-12">
           {!paymentComplete ? (
             <PaymentForm 
               booking={booking}

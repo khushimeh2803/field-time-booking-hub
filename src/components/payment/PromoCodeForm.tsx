@@ -58,8 +58,9 @@ const PromoCodeForm = ({ onPromoApplied }: PromoCodeFormProps) => {
   };
 
   return (
-    <div className="mb-6">
-      <h3 className="font-medium mb-3">Promo Code</h3>
+    <div>
+      <h3 className="text-lg font-semibold mb-2">Promo Code</h3>
+      <p className="text-gray-600 mb-3">Enter a valid promo code to get a discount</p>
       <div className="flex space-x-2">
         <Input
           placeholder="Enter promo code"
@@ -71,6 +72,7 @@ const PromoCodeForm = ({ onPromoApplied }: PromoCodeFormProps) => {
           onClick={applyPromoCode} 
           disabled={loading || !promoCode.trim()}
           variant="outline"
+          className="bg-green-400 hover:bg-green-500 text-white border-0"
         >
           Apply
         </Button>
