@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
+import { format } from "date-fns";
 
 export const useMyBookings = () => {
   const [bookings, setBookings] = useState<any[]>([]);
@@ -26,7 +27,7 @@ export const useMyBookings = () => {
           )
         `)
         .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+        .order('booking_date', { ascending: false });
 
       if (error) throw error;
 
@@ -42,8 +43,13 @@ export const useMyBookings = () => {
         address: booking.grounds?.address || 'Address not available',
         paymentMethod: booking.payment_status === 'paid' ? 'Paid' : 'Pending',
         completed: new Date(booking.booking_date) < new Date(),
+        formattedDate: format(new Date(booking.booking_date), 'MMM dd, yyyy'),
         rated: false,
-        rating: 0
+        rating: 0,
+        bookingTime: `${booking.start_time} - ${booking.end_time}`,
+        paymentStatus: booking.payment_status,
+        promoCode: booking.promo_code,
+        membershipApplied: booking.membership_applied
       }));
 
       setBookings(formattedBookings);
@@ -77,6 +83,11 @@ export const useMyBookings = () => {
         ? { ...booking, rated: true, rating } 
         : booking
     ));
+    
+    toast({
+      title: "Rating Submitted",
+      description: "Thank you for rating your experience!"
+    });
   };
 
   const handleCancellationRequest = (bookingId: number) => {

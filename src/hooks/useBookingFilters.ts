@@ -14,9 +14,9 @@ export const useBookingFilters = ({ bookings }: UseBookingFiltersProps) => {
   const filteredBookings = useMemo(() => {
     return bookings.filter(booking => {
       const matchesSearch = booking.groundName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          booking.address.toLowerCase().includes(searchTerm.toLowerCase());
+                          (booking.address && booking.address.toLowerCase().includes(searchTerm.toLowerCase()));
       
-      const matchesSport = !selectedSport || booking.sport === selectedSport;
+      const matchesSport = !selectedSport || booking.sport === selectedSport.toLowerCase();
       
       const matchesStatus = !statusFilter || booking.status === statusFilter;
       
