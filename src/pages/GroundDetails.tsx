@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
@@ -436,10 +435,10 @@ const GroundDetails = () => {
                 className="w-full bg-primary hover:bg-primary/90"
                 disabled={selectedTimeSlots.length === 0}
                 onClick={() => {
-                  if (selectedTimeSlots.length > 0) {
-                    // Include membership ID in the booking parameters if available
+                  if (selectedTimeSlots.length > 0 && selectedDate) {
+                    const navigate = useNavigate();
                     const membershipParam = activeMembership ? `&membershipId=${activeMembership.id}` : '';
-                    window.location.href = `/booking?groundId=${ground.id}&date=${selectedDate?.toISOString()}&slots=${selectedTimeSlots.join(',')}${membershipParam}`;
+                    navigate(`/booking?groundId=${ground.id}&date=${selectedDate.toISOString()}&slots=${selectedTimeSlots.join(',')}${membershipParam}`);
                   }
                 }}
               >
