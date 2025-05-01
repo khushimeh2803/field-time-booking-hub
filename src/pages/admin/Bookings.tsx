@@ -19,9 +19,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import BookingStatusBadge from "@/components/admin/BookingStatusBadge";
-import ExportPDF from "@/components/admin/ExportPDF";
-import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
 
 const AdminBookings = () => {
   const [bookings, setBookings] = useState<any[]>([]);
@@ -31,24 +28,10 @@ const AdminBookings = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    fetchData();
+    fetchBookings();
+    fetchUsers();
+    fetchGrounds();
   }, []);
-  
-  // Use realtime updates for bookings table
-  useRealtimeSubscription({
-    table: 'bookings',
-    onEvent: () => {
-      fetchBookings(statusFilter !== "all" ? statusFilter : undefined);
-    },
-  });
-
-  const fetchData = async () => {
-    await Promise.all([
-      fetchBookings(),
-      fetchUsers(),
-      fetchGrounds()
-    ]);
-  };
 
   const fetchBookings = async (status?: string) => {
     try {
@@ -140,33 +123,26 @@ const AdminBookings = () => {
   };
 
   return (
-    <div className="space-y-6" id="bookings-table">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Manage Bookings</h1>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center space-x-2">
-            <span className="text-sm text-muted-foreground">Filter by status:</span>
-            <Select 
-              value={statusFilter}
-              onValueChange={handleFilterChange}
-            >
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Bookings</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="confirmed">Confirmed</SelectItem>
-                <SelectItem value="cancelled">Cancelled</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <ExportPDF
-            contentId="bookings-table"
-            fileName="bookings-report"
-            buttonText="Export Bookings"
-          />
+        <div className="flex items-center space-x-2">
+          <span className="text-sm text-muted-foreground">Filter by status:</span>
+          <Select 
+            value={statusFilter}
+            onValueChange={handleFilterChange}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Filter by status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Bookings</SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="confirmed">Confirmed</SelectItem>
+              <SelectItem value="cancelled">Cancelled</SelectItem>
+              <SelectItem value="completed">Completed</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
@@ -180,7 +156,6 @@ const AdminBookings = () => {
               <TableHead>Date</TableHead>
               <TableHead>Time</TableHead>
               <TableHead>Amount</TableHead>
-              <TableHead>Payment</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
@@ -199,15 +174,14 @@ const AdminBookings = () => {
                 </TableCell>
                 <TableCell>${booking.total_amount}</TableCell>
                 <TableCell>
-                  <span className={`inline-block px-2 py-1 rounded text-xs ${
-                    booking.payment_status === 'paid' ? 'bg-green-100 text-green-800' : 
-                    'bg-yellow-100 text-yellow-800'
+                  <span className={`px-2 py-1 rounded text-xs ${
+                    booking.status === 'confirmed' ? 'bg-green-100 text-green-800' : 
+                    booking.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
+                    booking.status === 'cancelled' ? 'bg-red-100 text-red-800' : 
+                    'bg-blue-100 text-blue-800'
                   }`}>
-                    {booking.payment_status === 'paid' ? 'Paid' : 'Pending'}
+                    {booking.status}
                   </span>
-                </TableCell>
-                <TableCell>
-                  <BookingStatusBadge status={booking.status} />
                 </TableCell>
                 <TableCell>
                   <Select 
@@ -229,7 +203,7 @@ const AdminBookings = () => {
             ))}
             {bookings.length === 0 && (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-4">
+                <TableCell colSpan={8} className="text-center py-4">
                   No bookings found
                 </TableCell>
               </TableRow>

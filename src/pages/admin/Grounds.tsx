@@ -1,23 +1,16 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2, Plus, Image } from "lucide-react";
+import { Edit, Trash2, Plus } from "lucide-react";
 import AddGroundForm from "@/components/admin/forms/AddGroundForm";
 import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 
 const AdminGrounds = () => {
   const [grounds, setGrounds] = useState<any[]>([]);
   const [sports, setSports] = useState<any[]>([]);
   const [isAddFormOpen, setIsAddFormOpen] = useState(false);
-  const [isImageDialogOpen, setIsImageDialogOpen] = useState(false);
-  const [currentGroundId, setCurrentGroundId] = useState<string | null>(null);
-  const [imageUrls, setImageUrls] = useState<string[]>([]);
-  const [newImageUrl, setNewImageUrl] = useState("");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -66,60 +59,6 @@ const AdminGrounds = () => {
     fetchGrounds(); // Refresh grounds list when changes occur
   }, []);
 
-  const openImageDialog = (groundId: string, images: string[] = []) => {
-    setCurrentGroundId(groundId);
-    setImageUrls(images || []);
-    setIsImageDialogOpen(true);
-  };
-
-  const handleAddImage = () => {
-    if (!newImageUrl.trim()) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Please enter a valid image URL",
-      });
-      return;
-    }
-    
-    setImageUrls([...imageUrls, newImageUrl]);
-    setNewImageUrl("");
-  };
-
-  const handleRemoveImage = (index: number) => {
-    const newImages = [...imageUrls];
-    newImages.splice(index, 1);
-    setImageUrls(newImages);
-  };
-
-  const handleSaveImages = async () => {
-    if (!currentGroundId) return;
-
-    try {
-      const { error } = await supabase
-        .from("grounds")
-        .update({ images: imageUrls })
-        .eq("id", currentGroundId);
-
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "Ground images updated successfully",
-      });
-      
-      setIsImageDialogOpen(false);
-      fetchGrounds();
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to update ground images",
-      });
-      console.error("Error updating ground images:", error);
-    }
-  };
-
   useRealtimeSubscription({
     table: 'grounds',
     onEvent: handleRealtimeGround,
@@ -166,13 +105,6 @@ const AdminGrounds = () => {
                     <Button variant="outline" size="sm">
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => openImageDialog(ground.id, ground.images)}
-                    >
-                      <Image className="h-4 w-4" />
-                    </Button>
                     <Button variant="outline" size="sm" className="text-red-500">
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -196,58 +128,6 @@ const AdminGrounds = () => {
         onOpenChange={setIsAddFormOpen}
         onSuccess={fetchGrounds}
       />
-
-      <Dialog open={isImageDialogOpen} onOpenChange={setIsImageDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Manage Ground Images</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="flex items-center space-x-2">
-              <Input 
-                placeholder="Paste image URL here" 
-                value={newImageUrl} 
-                onChange={(e) => setNewImageUrl(e.target.value)}
-                className="flex-1"
-              />
-              <Button onClick={handleAddImage}>Add</Button>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4 max-h-80 overflow-y-auto p-2">
-              {imageUrls.map((url, index) => (
-                <div key={index} className="relative group">
-                  <img 
-                    src={url} 
-                    alt={`Ground image ${index + 1}`} 
-                    className="w-full h-32 object-cover rounded-md"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = 'https://placehold.co/400x300?text=Invalid+Image';
-                    }}
-                  />
-                  <Button 
-                    variant="destructive" 
-                    size="sm" 
-                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={() => handleRemoveImage(index)}
-                  >
-                    ✕
-                  </Button>
-                </div>
-              ))}
-              {imageUrls.length === 0 && (
-                <div className="col-span-2 text-center py-4 text-muted-foreground">
-                  No images added yet
-                </div>
-              )}
-            </div>
-            
-            <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setIsImageDialogOpen(false)}>Cancel</Button>
-              <Button onClick={handleSaveImages}>Save Images</Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
