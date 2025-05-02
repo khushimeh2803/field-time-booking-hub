@@ -1,7 +1,7 @@
 
-import { useState, useEffect } from "react";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { format } from "date-fns";
+import { Trash2, RefreshCcw } from "lucide-react";
+import { useContactSubmissions } from "@/hooks/useContactSubmissions";
 import {
   Table,
   TableBody,
@@ -12,69 +12,9 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { format } from "date-fns";
-import { Trash2, RefreshCcw } from "lucide-react";
 
 const ContactSubmissions = () => {
-  const [submissions, setSubmissions] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const { toast } = useToast();
-
-  useEffect(() => {
-    fetchSubmissions();
-  }, []);
-
-  const fetchSubmissions = async () => {
-    try {
-      setIsLoading(true);
-      const { data, error } = await supabase
-        .from("contact_submissions")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      setSubmissions(data || []);
-      toast({
-        title: "Data Refreshed",
-        description: "Contact submissions have been updated",
-      });
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: error.message || "Failed to load contact submissions",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const deleteSubmission = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this submission?")) return;
-    
-    try {
-      const { error } = await supabase
-        .from("contact_submissions")
-        .delete()
-        .eq("id", id);
-
-      if (error) throw error;
-      
-      toast({
-        title: "Submission Deleted",
-        description: "The contact submission has been deleted successfully",
-      });
-      
-      // Update local state
-      setSubmissions(submissions.filter((sub) => sub.id !== id));
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: error.message || "Failed to delete submission",
-      });
-    }
-  };
+  const { submissions, isLoading, fetchSubmissions, deleteSubmission } = useContactSubmissions();
 
   return (
     <div className="space-y-6">

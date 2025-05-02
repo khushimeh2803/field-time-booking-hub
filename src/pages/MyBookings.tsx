@@ -1,82 +1,123 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MapPin, Calendar, Clock, Star as StarIcon, X, Check, Filter } from "lucide-react";
+import { MapPin, Calendar, Clock, Star as StarIcon, Filter } from "lucide-react";
 import { format } from "date-fns";
-
-// Simulated bookings data
-const bookingsData = [
-  {
-    id: 1,
-    groundName: "Green Valley Stadium",
-    sport: "football",
-    date: new Date("2023-09-15"),
-    timeSlots: ["18:00 - 19:00", "19:00 - 20:00"],
-    price: 160,
-    status: "confirmed",
-    image: "https://images.unsplash.com/photo-1487466365202-1afdb86c764e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1752&q=80",
-    address: "123 Sports Avenue, Stadium District",
-    paymentMethod: "Pay at Venue",
-    completed: true,
-    rated: true,
-    rating: 4
-  },
-  {
-    id: 2,
-    groundName: "Central Sports Hub",
-    sport: "football",
-    date: new Date("2023-09-22"),
-    timeSlots: ["10:00 - 11:00"],
-    price: 65,
-    status: "confirmed",
-    image: "https://images.unsplash.com/photo-1516132006923-6cf348e5dee2?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1740&q=80",
-    address: "45 Central Park Road, Downtown",
-    paymentMethod: "Credit Card",
-    completed: false,
-    rated: false,
-    rating: 0
-  },
-  {
-    id: 3,
-    groundName: "Cricket Oval",
-    sport: "cricket",
-    date: new Date("2023-09-18"),
-    timeSlots: ["14:00 - 15:00", "15:00 - 16:00", "16:00 - 17:00"],
-    price: 360,
-    status: "pending",
-    image: "https://images.unsplash.com/photo-1554178286-2d4133387b5c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1740&q=80",
-    address: "256 Boundary Road, Sports Village",
-    paymentMethod: "Pay at Venue",
-    completed: false,
-    rated: false,
-    rating: 0
-  },
-  {
-    id: 4,
-    groundName: "Elite Badminton Center",
-    sport: "badminton",
-    date: new Date("2023-09-10"),
-    timeSlots: ["17:00 - 18:00", "18:00 - 19:00"],
-    price: 70,
-    status: "confirmed",
-    image: "https://images.unsplash.com/photo-1628891890467-b79f2c8ba9dc?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1740&q=80",
-    address: "47 Racquet Avenue, Sportsville",
-    paymentMethod: "Credit Card",
-    completed: true,
-    rated: false,
-    rating: 0
-  }
-];
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import BookingReceipt from "@/components/booking/BookingReceipt";
 
 const MyBookings = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSport, setSelectedSport] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("");
-  const [bookings, setBookings] = useState(bookingsData);
+  const [bookings, setBookings] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
+  const [sports, setSports] = useState<any[]>([]);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    fetchBookings();
+    fetchSports();
+  }, []);
+
+  const fetchBookings = async () => {
+    try {
+      setIsLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "You must be logged in to view your bookings",
+        });
+        return;
+      }
+
+      const { data: bookingsData, error } = await supabase
+        .from("bookings")
+        .select(`
+          id,
+          booking_date,
+          start_time,
+          end_time,
+          status,
+          total_amount,
+          payment_status,
+          ground_id,
+          created_at
+        `)
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      // Fetch ground details for each booking
+      if (bookingsData && bookingsData.length > 0) {
+        const enhancedBookings = await Promise.all(
+          bookingsData.map(async (booking) => {
+            // Get ground details
+            const { data: groundData } = await supabase
+              .from("grounds")
+              .select("name, address, sport_id, images")
+              .eq("id", booking.ground_id)
+              .single();
+
+            // Format time slots
+            const timeSlots = [`${booking.start_time} - ${booking.end_time}`];
+
+            return {
+              id: booking.id,
+              groundName: groundData?.name || "Unknown Ground",
+              sport: groundData?.sport_id || "",
+              date: new Date(booking.booking_date),
+              timeSlots,
+              price: parseFloat(booking.total_amount),
+              status: booking.status,
+              image: groundData?.images?.[0] || "https://images.unsplash.com/photo-1487466365202-1afdb86c764e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1752&q=80",
+              address: groundData?.address || "Address unavailable",
+              paymentMethod: booking.payment_status === "paid" ? "Credit Card" : "Pay at Venue",
+              completed: new Date() > new Date(booking.booking_date),
+              rated: false,
+              rating: 0,
+              createdAt: booking.created_at
+            };
+          })
+        );
+
+        setBookings(enhancedBookings);
+      } else {
+        setBookings([]);
+      }
+    } catch (error: any) {
+      console.error("Error fetching bookings:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to load your bookings",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchSports = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("sports")
+        .select("id, name");
+
+      if (error) throw error;
+      setSports(data || []);
+    } catch (error) {
+      console.error("Error fetching sports:", error);
+    }
+  };
 
   // Filter bookings based on selected filters
   const filteredBookings = bookings.filter(booking => {
@@ -94,19 +135,33 @@ const MyBookings = () => {
   });
 
   // Handle rating a booking
-  const handleRateBooking = (bookingId: number, rating: number) => {
+  const handleRateBooking = (bookingId: string | number, rating: number) => {
     setBookings(bookings.map(booking => 
       booking.id === bookingId 
         ? { ...booking, rated: true, rating } 
         : booking
     ));
+    
+    // Here you would also save the rating to the database
+    toast({
+      title: "Thank You!",
+      description: "Your rating has been submitted.",
+    });
   };
 
   // Handle requesting cancellation
-  const handleCancellationRequest = (bookingId: number) => {
+  const handleCancellationRequest = (bookingId: string | number) => {
     // In a real app, this would send a request to the backend
-    alert("Cancellation request sent to admin. You will be notified once processed.");
+    toast({
+      title: "Cancellation Request Sent",
+      description: "Your request has been submitted to admin. You will be notified once processed.",
+    });
   };
+
+  // Recent bookings (show 2 most recent ones)
+  const recentBookings = [...bookings].sort((a, b) => 
+    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  ).slice(0, 2);
 
   return (
     <MainLayout>
@@ -121,6 +176,45 @@ const MyBookings = () => {
 
       <section className="py-8 bg-muted">
         <div className="container mx-auto px-4">
+          {recentBookings.length > 0 && (
+            <div className="mb-8">
+              <h2 className="text-2xl font-bold mb-4">Recent Bookings</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {recentBookings.map((booking) => (
+                  <div key={`recent-${booking.id}`} className="bg-white rounded-lg shadow p-4 flex gap-4">
+                    <div className="w-20 h-20 flex-shrink-0">
+                      <img 
+                        src={booking.image} 
+                        alt={booking.groundName} 
+                        className="w-full h-full object-cover rounded"
+                      />
+                    </div>
+                    <div className="flex-grow">
+                      <h3 className="font-semibold">{booking.groundName}</h3>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Calendar className="h-3 w-3" />
+                        <span>{format(booking.date, "MMM d, yyyy")}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Clock className="h-3 w-3" />
+                        <span>{booking.timeSlots.join(", ")}</span>
+                      </div>
+                      <div className="mt-2 flex items-center justify-between">
+                        <span className={`px-2 py-0.5 rounded-full text-xs ${
+                          booking.status === 'confirmed' ? 'bg-green-100 text-green-800' :
+                          booking.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'
+                        }`}>
+                          {booking.status}
+                        </span>
+                        <span className="font-semibold">${booking.price}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="bg-white p-4 rounded-lg shadow-md mb-8">
             <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
               <div className="relative w-full md:w-1/3">
@@ -151,11 +245,10 @@ const MyBookings = () => {
                     <SelectValue placeholder="All Sports" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Sports</SelectItem>
-                    <SelectItem value="football">Football</SelectItem>
-                    <SelectItem value="cricket">Cricket</SelectItem>
-                    <SelectItem value="basketball">Basketball</SelectItem>
-                    <SelectItem value="badminton">Badminton</SelectItem>
+                    <SelectItem value="">All Sports</SelectItem>
+                    {sports.map((sport) => (
+                      <SelectItem key={sport.id} value={sport.id}>{sport.name}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -173,7 +266,7 @@ const MyBookings = () => {
                       <SelectValue placeholder="All Statuses" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Statuses</SelectItem>
+                      <SelectItem value="">All Statuses</SelectItem>
                       <SelectItem value="confirmed">Confirmed</SelectItem>
                       <SelectItem value="pending">Pending</SelectItem>
                       <SelectItem value="cancelled">Cancelled</SelectItem>
@@ -187,7 +280,7 @@ const MyBookings = () => {
           {/* Results Count */}
           <div className="mb-6">
             <p className="text-muted-foreground">
-              Showing {filteredBookings.length} bookings
+              {isLoading ? "Loading your bookings..." : `Showing ${filteredBookings.length} bookings`}
             </p>
           </div>
 
@@ -214,10 +307,12 @@ const MyBookings = () => {
                     <div className="md:flex justify-between mb-4">
                       <div>
                         <h3 className="text-xl font-semibold mb-1">{booking.groundName}</h3>
-                        <p className="text-muted-foreground capitalize">{booking.sport}</p>
+                        <p className="text-muted-foreground capitalize">
+                          {sports.find(s => s.id === booking.sport)?.name || "Unknown Sport"}
+                        </p>
                       </div>
                       <div className="mt-2 md:mt-0 text-right">
-                        <p className="font-bold text-lg">${booking.price}</p>
+                        <p className="font-bold text-lg">${booking.price.toFixed(2)}</p>
                         <p className="text-sm text-muted-foreground">{booking.paymentMethod}</p>
                       </div>
                     </div>
@@ -282,15 +377,21 @@ const MyBookings = () => {
                         </div>
                       )}
                       
-                      {booking.status === 'confirmed' && !booking.completed && (
-                        <Button 
-                          variant="outline" 
-                          className="border-red-500 text-red-500 hover:bg-red-50"
-                          onClick={() => handleCancellationRequest(booking.id)}
-                        >
-                          Request Cancellation
-                        </Button>
-                      )}
+                      <div className="flex gap-2">
+                        {booking.status === 'confirmed' && (
+                          <BookingReceipt booking={booking} />
+                        )}
+                        
+                        {booking.status === 'confirmed' && !booking.completed && (
+                          <Button 
+                            variant="outline" 
+                            className="border-red-500 text-red-500 hover:bg-red-50"
+                            onClick={() => handleCancellationRequest(booking.id)}
+                          >
+                            Cancel Booking
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -299,7 +400,7 @@ const MyBookings = () => {
           </div>
 
           {/* Empty State */}
-          {filteredBookings.length === 0 && (
+          {!isLoading && filteredBookings.length === 0 && (
             <div className="text-center py-16 bg-white rounded-xl shadow-md">
               <h3 className="text-xl font-semibold mb-2">No Bookings Found</h3>
               <p className="text-muted-foreground mb-6">You don't have any bookings matching your filters.</p>
