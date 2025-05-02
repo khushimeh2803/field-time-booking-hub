@@ -9,6 +9,38 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      booking_feedback: {
+        Row: {
+          booking_id: string
+          feedback_date: string
+          id: string
+          rating: number
+          user_id: string
+        }
+        Insert: {
+          booking_id: string
+          feedback_date?: string
+          id?: string
+          rating: number
+          user_id: string
+        }
+        Update: {
+          booking_id?: string
+          feedback_date?: string
+          id?: string
+          rating?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_feedback_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bookings: {
         Row: {
           booking_date: string

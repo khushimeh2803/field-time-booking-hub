@@ -73,7 +73,7 @@ const MyBookings = () => {
               .from("booking_feedback")
               .select("rating")
               .eq("booking_id", booking.id)
-              .single();
+              .maybeSingle();
 
             return {
               id: String(booking.id), // Ensuring ID is explicitly converted to string
