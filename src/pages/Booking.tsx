@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
@@ -71,11 +70,19 @@ const Booking = () => {
   const [total, setTotal] = useState(0);
   const [acceptTerms, setAcceptTerms] = useState(false);
   
+  // Membership details
+  const [hasMembership, setHasMembership] = useState(false);
+  const [applyMembership, setApplyMembership] = useState(false);
+  const [membershipDiscount, setMembershipDiscount] = useState(0);
+  
   // For card payment (mock)
   const [cardName, setCardName] = useState("");
   const [cardNumber, setCardNumber] = useState("");
   const [cardExpiry, setCardExpiry] = useState("");
   const [cardCvc, setCardCvc] = useState("");
+  
+  // Available promo codes from database
+  const [availablePromoCodes, setAvailablePromoCodes] = useState<any[]>([]);
 
   // Parse query parameters to get booking details
   useEffect(() => {
@@ -114,6 +121,10 @@ const Booking = () => {
         setTotal(initialSubtotal);
       }
     }
+    
+    // Check if user has membership and fetch available promo codes
+    checkUserMembership();
+    fetchPromoCodes();
   }, [location.search]);
 
   // Fetch ground details from Supabase
@@ -147,18 +158,79 @@ const Booking = () => {
     }
   };
 
+  // Check if user has an active membership
+  const checkUserMembership = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const today = new Date().toISOString().split('T')[0];
+      
+      // Check for active membership
+      const { data: memberships, error } = await supabase
+        .from('user_memberships')
+        .select('*, membership_plans(discount_percentage)')
+        .eq('user_id', user.id)
+        .gte('end_date', today)
+        .lt('start_date', today)
+        .single();
+      
+      if (error && error.code !== 'PGRST116') {
+        console.error("Error checking membership:", error);
+        return;
+      }
+      
+      if (memberships) {
+        setHasMembership(true);
+        setMembershipDiscount(memberships.membership_plans.discount_percentage || 0);
+      }
+    } catch (error) {
+      console.error("Error checking membership status:", error);
+    }
+  };
+
+  // Fetch valid promo codes from the database
+  const fetchPromoCodes = async () => {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      
+      const { data, error } = await supabase
+        .from('promo_codes')
+        .select('*')
+        .eq('is_active', true)
+        .lte('valid_from', today)
+        .gte('valid_until', today);
+      
+      if (error) throw error;
+      
+      setAvailablePromoCodes(data || []);
+    } catch (error) {
+      console.error("Error fetching promo codes:", error);
+    }
+  };
+
   // Apply promo code
   const applyPromoCode = () => {
-    const foundPromo = promoCodes.find(p => p.code === promoCode);
+    const foundPromo = availablePromoCodes.find(p => p.code.toLowerCase() === promoCode.toLowerCase());
+    
     if (foundPromo) {
-      setAppliedPromo(foundPromo);
-      const discountAmount = (subtotal * foundPromo.discount) / 100;
-      setTotal(subtotal - discountAmount);
+      setAppliedPromo({
+        code: foundPromo.code,
+        discount: foundPromo.discount_percentage
+      });
+      
+      // Calculate new total with promo discount
+      calculateTotal(foundPromo.discount_percentage, applyMembership ? membershipDiscount : 0);
+      
+      toast({
+        title: "Promo Code Applied",
+        description: `${foundPromo.code} applied with ${foundPromo.discount_percentage}% discount.`
+      });
     } else {
       toast({
         variant: "destructive",
         title: "Invalid Promo Code",
-        description: "The promo code you entered is not valid."
+        description: "The promo code you entered is not valid or has expired."
       });
     }
   };
@@ -167,7 +239,32 @@ const Booking = () => {
   const removePromo = () => {
     setAppliedPromo(null);
     setPromoCode("");
-    setTotal(subtotal);
+    calculateTotal(0, applyMembership ? membershipDiscount : 0);
+  };
+
+  // Toggle membership application
+  const toggleMembership = (checked: boolean) => {
+    setApplyMembership(checked);
+    calculateTotal(appliedPromo?.discount || 0, checked ? membershipDiscount : 0);
+  };
+
+  // Calculate total price with all applicable discounts
+  const calculateTotal = (promoDiscount: number, membershipDiscount: number) => {
+    let discountedTotal = subtotal;
+    
+    // Apply promo code discount first
+    if (promoDiscount > 0) {
+      const promoDiscountAmount = (subtotal * promoDiscount) / 100;
+      discountedTotal -= promoDiscountAmount;
+    }
+    
+    // Then apply membership discount on already discounted amount if any
+    if (membershipDiscount > 0) {
+      const membershipDiscountAmount = (discountedTotal * membershipDiscount) / 100;
+      discountedTotal -= membershipDiscountAmount;
+    }
+    
+    setTotal(discountedTotal);
   };
 
   // Handle booking submission
@@ -221,7 +318,8 @@ const Booking = () => {
           status: "pending",
           payment_status: paymentMethod === "card" ? "paid" : "pending",
           total_amount: total,
-          promo_code: appliedPromo?.code || null
+          promo_code: appliedPromo?.code || null,
+          membership_applied: applyMembership
         })
         .select();
 
@@ -390,6 +488,28 @@ const Booking = () => {
                     </div>
                   )}
                   
+                  {/* Membership Discount */}
+                  {hasMembership && (
+                    <div className="mb-8">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="membership" 
+                          checked={applyMembership}
+                          onCheckedChange={(checked) => toggleMembership(!!checked)}
+                        />
+                        <label 
+                          htmlFor="membership" 
+                          className="text-sm flex items-center"
+                        >
+                          <span>Apply my membership discount ({membershipDiscount}% off)</span>
+                          <span className="ml-1 px-2 py-0.5 bg-primary/10 text-primary text-xs rounded-full">
+                            SAVE ${((subtotal * membershipDiscount) / 100).toFixed(2)}
+                          </span>
+                        </label>
+                      </div>
+                    </div>
+                  )}
+                  
                   {/* Promo Code */}
                   <div className="mb-8">
                     <h3 className="text-lg font-semibold mb-4">Promo Code</h3>
@@ -493,8 +613,15 @@ const Booking = () => {
                   
                   {appliedPromo && (
                     <div className="flex justify-between text-primary">
-                      <span>Discount ({appliedPromo.discount}%)</span>
+                      <span>Promo Discount ({appliedPromo.discount}%)</span>
                       <span>-${(subtotal * appliedPromo.discount / 100).toFixed(2)}</span>
+                    </div>
+                  )}
+                  
+                  {applyMembership && (
+                    <div className="flex justify-between text-primary">
+                      <span>Membership Discount ({membershipDiscount}%)</span>
+                      <span>-${((subtotal - (appliedPromo ? (subtotal * appliedPromo.discount / 100) : 0)) * membershipDiscount / 100).toFixed(2)}</span>
                     </div>
                   )}
                 </div>

@@ -68,8 +68,15 @@ const MyBookings = () => {
             // Format time slots
             const timeSlots = [`${booking.start_time} - ${booking.end_time}`];
 
+            // Check if booking was already rated in feedback system
+            const { data: feedbackData } = await supabase
+              .from("booking_feedback")
+              .select("rating")
+              .eq("booking_id", booking.id)
+              .single();
+
             return {
-              id: String(booking.id), // Ensure ID is explicitly converted to string
+              id: String(booking.id), // Ensuring ID is explicitly converted to string
               groundName: groundData?.name || "Unknown Ground",
               sport: groundData?.sport_id || "",
               date: new Date(booking.booking_date),
@@ -80,8 +87,8 @@ const MyBookings = () => {
               address: groundData?.address || "Address unavailable",
               paymentMethod: booking.payment_status === "paid" ? "Credit Card" : "Pay at Venue",
               completed: new Date() > new Date(booking.booking_date),
-              rated: false,
-              rating: 0,
+              rated: !!feedbackData,
+              rating: feedbackData?.rating || 0,
               createdAt: booking.created_at
             };
           })
@@ -132,18 +139,51 @@ const MyBookings = () => {
   });
 
   // Handle rating a booking
-  const handleRateBooking = (bookingId: string, rating: number) => {
-    setBookings(bookings.map(booking => 
-      booking.id === bookingId 
-        ? { ...booking, rated: true, rating } 
-        : booking
-    ));
-    
-    // Here you would also save the rating to the database
-    toast({
-      title: "Thank You!",
-      description: "Your rating has been submitted.",
-    });
+  const handleRateBooking = async (bookingId: string, rating: number) => {
+    try {
+      // Get authenticated user
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast({
+          variant: "destructive",
+          title: "Authentication Required",
+          description: "You must be logged in to rate a booking."
+        });
+        return;
+      }
+
+      // Save rating to the database
+      const { error } = await supabase
+        .from("booking_feedback")
+        .insert({
+          booking_id: bookingId,
+          user_id: user.id,
+          rating: rating,
+          feedback_date: new Date().toISOString()
+        });
+
+      if (error) throw error;
+
+      // Update local state
+      setBookings(bookings.map(booking => 
+        booking.id === bookingId 
+          ? { ...booking, rated: true, rating } 
+          : booking
+      ));
+      
+      toast({
+        title: "Thank You!",
+        description: "Your rating has been submitted.",
+      });
+    } catch (error: any) {
+      console.error("Error submitting rating:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to submit your rating",
+      });
+    }
   };
 
   // Handle requesting cancellation

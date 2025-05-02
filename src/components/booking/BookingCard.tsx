@@ -78,6 +78,7 @@ const BookingCard = ({ booking, sportName, onRateBooking, onCancellationRequest 
           </div>
           
           <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t">
+            {/* Only show rating if booking is completed */}
             {booking.completed ? (
               booking.rated ? (
                 <div className="flex items-center">

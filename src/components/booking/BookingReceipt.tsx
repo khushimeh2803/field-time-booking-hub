@@ -1,4 +1,3 @@
-
 import React from "react";
 import { format } from "date-fns";
 import html2canvas from "html2canvas";
@@ -9,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 
 interface BookingReceiptProps {
   booking: {
-    id: string;
+    id: string; // Ensure this is typed as string
     groundName: string;
     date: Date;
     timeSlots: string[];
