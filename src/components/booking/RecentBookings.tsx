@@ -3,7 +3,7 @@ import { format } from "date-fns";
 import { Calendar, Clock } from "lucide-react";
 
 interface RecentBooking {
-  id: string;
+  id: string; // Ensure this is consistently typed as string
   groundName: string;
   date: Date;
   timeSlots: string[];

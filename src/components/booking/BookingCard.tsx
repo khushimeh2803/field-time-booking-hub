@@ -7,7 +7,7 @@ import BookingReceipt from "@/components/booking/BookingReceipt";
 
 interface BookingCardProps {
   booking: {
-    id: string;
+    id: string; // Ensure this is consistently typed as string
     groundName: string;
     sport: string;
     date: Date;

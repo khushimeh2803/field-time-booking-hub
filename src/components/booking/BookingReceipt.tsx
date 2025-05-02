@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 
 interface BookingReceiptProps {
   booking: {
-    id: number | string;
+    id: string; // Ensure this is consistently typed as string
     groundName: string;
     date: Date;
     timeSlots: string[];
