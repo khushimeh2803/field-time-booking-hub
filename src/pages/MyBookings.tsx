@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
@@ -135,6 +134,7 @@ const MyBookings = () => {
   });
 
   // Handle rating a booking
+  // Changed function signature to use string for bookingId
   const handleRateBooking = (bookingId: string, rating: number) => {
     setBookings(bookings.map(booking => 
       booking.id === bookingId 
@@ -150,6 +150,7 @@ const MyBookings = () => {
   };
 
   // Handle requesting cancellation
+  // Changed function signature to use string for bookingId
   const handleCancellationRequest = (bookingId: string) => {
     // In a real app, this would send a request to the backend
     toast({
