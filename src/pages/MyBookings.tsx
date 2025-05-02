@@ -135,7 +135,7 @@ const MyBookings = () => {
   });
 
   // Handle rating a booking
-  const handleRateBooking = (bookingId: string | number, rating: number) => {
+  const handleRateBooking = (bookingId: string, rating: number) => {
     setBookings(bookings.map(booking => 
       booking.id === bookingId 
         ? { ...booking, rated: true, rating } 
@@ -150,7 +150,7 @@ const MyBookings = () => {
   };
 
   // Handle requesting cancellation
-  const handleCancellationRequest = (bookingId: string | number) => {
+  const handleCancellationRequest = (bookingId: string) => {
     // In a real app, this would send a request to the backend
     toast({
       title: "Cancellation Request Sent",
