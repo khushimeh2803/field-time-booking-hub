@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 
 interface BookingReceiptProps {
   booking: {
-    id: string; // Ensure this is consistently typed as string
+    id: string;
     groundName: string;
     date: Date;
     timeSlots: string[];
@@ -36,12 +36,19 @@ const BookingReceipt = ({ booking }: BookingReceiptProps) => {
         throw new Error("Receipt element not found");
       }
       
+      // Make the receipt visible for html2canvas
+      const origDisplay = receiptElement.style.display;
+      receiptElement.style.display = "block";
+      
       const canvas = await html2canvas(receiptElement, {
         scale: 2, // Higher scale for better quality
         useCORS: true,
         logging: false,
         backgroundColor: "#ffffff",
       });
+      
+      // Hide the receipt again
+      receiptElement.style.display = origDisplay;
       
       const imgData = canvas.toDataURL('image/png');
       
@@ -87,7 +94,7 @@ const BookingReceipt = ({ booking }: BookingReceiptProps) => {
       </Button>
       
       {/* Hidden receipt template that will be converted to PDF */}
-      <div id="booking-receipt" className="hidden p-8 bg-white">
+      <div id="booking-receipt" className="hidden p-8 bg-white" style={{ width: '800px' }}>
         <div className="flex flex-col space-y-6">
           <div className="flex justify-between items-center border-b pb-4">
             <div>

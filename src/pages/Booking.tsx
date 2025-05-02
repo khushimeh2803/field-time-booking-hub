@@ -16,26 +16,17 @@ import {
   CalendarDays, 
   Clock, 
   CreditCard, 
-  MonitorSmartphone, 
   Building, 
   DollarSign, 
   Tag, 
-  Check
 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { format } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
-// Simulated ground data
-const groundDetails = {
-  id: 1,
-  name: "Green Valley Stadium",
-  sport: "football",
-  price: 80,
-  image: "https://images.unsplash.com/photo-1487466365202-1afdb86c764e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1752&q=80",
-  address: "123 Sports Avenue, Stadium District",
-};
-
+// Map for time slots
 const timeSlotMap: Record<string, string> = {
   "1": "08:00 - 09:00",
   "2": "09:00 - 10:00",
@@ -63,9 +54,11 @@ const promoCodes = [
 const Booking = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { toast } = useToast();
   
   // Booking details
   const [groundId, setGroundId] = useState<string | null>(null);
+  const [groundData, setGroundData] = useState<any>(null);
   const [bookingDate, setBookingDate] = useState<Date | null>(null);
   const [selectedSlots, setSelectedSlots] = useState<string[]>([]);
   const [totalHours, setTotalHours] = useState(0);
@@ -90,8 +83,12 @@ const Booking = () => {
     const gId = params.get("groundId");
     const dateStr = params.get("date");
     const slots = params.get("slots");
+    const priceParam = params.get("price");
 
-    if (gId) setGroundId(gId);
+    if (gId) {
+      setGroundId(gId);
+      fetchGroundDetails(gId);
+    }
     
     if (dateStr) {
       try {
@@ -105,13 +102,50 @@ const Booking = () => {
       const slotArray = slots.split(",");
       setSelectedSlots(slotArray);
       setTotalHours(slotArray.length);
-      
-      // Calculate initial price
-      const initialSubtotal = groundDetails.price * slotArray.length;
-      setSubtotal(initialSubtotal);
-      setTotal(initialSubtotal);
+    }
+
+    // If price is passed directly from ground details
+    if (priceParam) {
+      const price = parseFloat(priceParam);
+      if (!isNaN(price)) {
+        const slotsCount = slots ? slots.split(",").length : 0;
+        const initialSubtotal = price * slotsCount;
+        setSubtotal(initialSubtotal);
+        setTotal(initialSubtotal);
+      }
     }
   }, [location.search]);
+
+  // Fetch ground details from Supabase
+  const fetchGroundDetails = async (id: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('grounds')
+        .select('*')
+        .eq('id', id)
+        .single();
+      
+      if (error) throw error;
+      
+      if (data) {
+        setGroundData(data);
+        
+        // Calculate initial price if not already set by URL param
+        if (selectedSlots.length > 0 && subtotal === 0) {
+          const initialSubtotal = data.price_per_hour * selectedSlots.length;
+          setSubtotal(initialSubtotal);
+          setTotal(initialSubtotal);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching ground details:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load ground details."
+      });
+    }
+  };
 
   // Apply promo code
   const applyPromoCode = () => {
@@ -121,7 +155,11 @@ const Booking = () => {
       const discountAmount = (subtotal * foundPromo.discount) / 100;
       setTotal(subtotal - discountAmount);
     } else {
-      alert("Invalid promo code");
+      toast({
+        variant: "destructive",
+        title: "Invalid Promo Code",
+        description: "The promo code you entered is not valid."
+      });
     }
   };
 
@@ -133,27 +171,80 @@ const Booking = () => {
   };
 
   // Handle booking submission
-  const handleSubmitBooking = (e: React.FormEvent) => {
+  const handleSubmitBooking = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!acceptTerms) {
-      alert("You must accept the terms and conditions to proceed.");
+      toast({
+        variant: "destructive",
+        title: "Terms & Conditions",
+        description: "You must accept the terms and conditions to proceed."
+      });
       return;
     }
-    
-    // In a real app, you would send the booking data to the server
-    console.log("Booking submitted:", {
-      groundId,
-      date: bookingDate,
-      timeSlots: selectedSlots,
-      paymentMethod,
-      promoCode: appliedPromo?.code || null,
-      total,
-      cardDetails: paymentMethod === "card" ? { cardName, cardNumber, cardExpiry, cardCvc } : null
-    });
-    
-    // Navigate to booking confirmation
-    navigate("/my-bookings");
+
+    try {
+      // Get authenticated user
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast({
+          variant: "destructive",
+          title: "Authentication Required",
+          description: "You must be logged in to make a booking."
+        });
+        return;
+      }
+
+      if (!groundId || !bookingDate || selectedSlots.length === 0) {
+        toast({
+          variant: "destructive",
+          title: "Missing Information",
+          description: "Please ensure all booking details are filled correctly."
+        });
+        return;
+      }
+
+      // Example start and end times from first and last slot
+      const firstSlot = timeSlotMap[selectedSlots[0]].split(" - ")[0];
+      const lastSlot = timeSlotMap[selectedSlots[selectedSlots.length - 1]].split(" - ")[1];
+
+      // Create booking in Supabase
+      const { data: bookingData, error } = await supabase
+        .from("bookings")
+        .insert({
+          user_id: user.id,
+          ground_id: groundId,
+          booking_date: bookingDate?.toISOString().split('T')[0],
+          start_time: firstSlot,
+          end_time: lastSlot,
+          status: "pending",
+          payment_status: paymentMethod === "card" ? "paid" : "pending",
+          total_amount: total,
+          promo_code: appliedPromo?.code || null
+        })
+        .select();
+
+      if (error) {
+        console.error("Booking error:", error);
+        throw error;
+      }
+
+      toast({
+        title: "Booking Successful",
+        description: "Your booking has been successfully created!"
+      });
+      
+      // Navigate to booking confirmation
+      navigate("/my-bookings");
+    } catch (error: any) {
+      console.error("Error creating booking:", error);
+      toast({
+        variant: "destructive",
+        title: "Booking Failed",
+        description: error.message || "Failed to create your booking. Please try again."
+      });
+    }
   };
 
   return (
@@ -183,7 +274,7 @@ const Booking = () => {
                     </div>
                     <div>
                       <div className="text-sm text-muted-foreground">Venue</div>
-                      <div className="font-medium">{groundDetails.name}</div>
+                      <div className="font-medium">{groundData?.name || "Loading..."}</div>
                     </div>
                   </div>
                   
@@ -217,7 +308,7 @@ const Booking = () => {
                     </div>
                     <div>
                       <div className="text-sm text-muted-foreground">Rate</div>
-                      <div className="font-medium">${groundDetails.price} per hour</div>
+                      <div className="font-medium">${groundData?.price_per_hour || "0"} per hour</div>
                     </div>
                   </div>
                 </div>
@@ -375,21 +466,21 @@ const Booking = () => {
                 
                 <div className="flex items-center gap-4 pb-4 border-b">
                   <img 
-                    src={groundDetails.image} 
-                    alt={groundDetails.name} 
+                    src={groundData?.images?.[0] || "https://images.unsplash.com/photo-1487466365202-1afdb86c764e"} 
+                    alt={groundData?.name || "Sports Ground"} 
                     className="w-20 h-20 object-cover rounded-md"
                   />
                   <div>
-                    <h3 className="font-medium">{groundDetails.name}</h3>
-                    <p className="text-sm text-muted-foreground">{groundDetails.sport}</p>
-                    <p className="text-sm text-muted-foreground">{groundDetails.address}</p>
+                    <h3 className="font-medium">{groundData?.name || "Loading..."}</h3>
+                    <p className="text-sm text-muted-foreground">{groundData?.sport_id || "Sports"}</p>
+                    <p className="text-sm text-muted-foreground">{groundData?.address || "Address unavailable"}</p>
                   </div>
                 </div>
                 
                 <div className="py-4 border-b space-y-3">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Price per hour</span>
-                    <span>${groundDetails.price}</span>
+                    <span>${groundData?.price_per_hour || 0}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Number of hours</span>
