@@ -126,10 +126,10 @@ const MyBookings = () => {
                          booking.address.toLowerCase().includes(searchTerm.toLowerCase());
     
     // Filter by sport
-    const matchesSport = !selectedSport || booking.sport === selectedSport;
+    const matchesSport = !selectedSport || selectedSport === "all" || booking.sport === selectedSport;
     
     // Filter by status
-    const matchesStatus = !statusFilter || booking.status === statusFilter;
+    const matchesStatus = !statusFilter || statusFilter === "all" || booking.status === statusFilter;
     
     return matchesSearch && matchesSport && matchesStatus;
   });
