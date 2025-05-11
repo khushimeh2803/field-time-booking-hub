@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,6 +20,19 @@ const MyBookings = () => {
     fetchBookings();
     fetchSports();
   }, []);
+
+  const fetchSports = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("sports")
+        .select("id, name");
+
+      if (error) throw error;
+      setSports(data || []);
+    } catch (error) {
+      console.error("Error fetching sports:", error);
+    }
+  };
 
   const fetchBookings = async () => {
     try {
@@ -76,7 +88,7 @@ const MyBookings = () => {
               .maybeSingle();
 
             return {
-              id: booking.id, 
+              id: booking.id.toString(), // Convert ID to string to fix type error
               groundName: groundData?.name || "Unknown Ground",
               sport: groundData?.sport_id || "",
               date: new Date(booking.booking_date),
@@ -107,19 +119,6 @@ const MyBookings = () => {
       });
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const fetchSports = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("sports")
-        .select("id, name");
-
-      if (error) throw error;
-      setSports(data || []);
-    } catch (error) {
-      console.error("Error fetching sports:", error);
     }
   };
 
