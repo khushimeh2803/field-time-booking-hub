@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { format } from "date-fns";
+import { RefreshCw, IndianRupee } from "lucide-react";
 
 const UserMemberships = () => {
   const [memberships, setMemberships] = useState<any[]>([]);
@@ -32,7 +33,7 @@ const UserMemberships = () => {
         .select(`
           *,
           profiles:user_id (full_name, email),
-          membership_plans:plan_id (name, discount_percentage, duration_months)
+          membership_plans:plan_id (name, discount_percentage, duration_months, price)
         `)
         .order("end_date", { ascending: false });
 
@@ -57,7 +58,8 @@ const UserMemberships = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">User Memberships</h1>
-        <Button>
+        <Button onClick={fetchUserMemberships}>
+          <RefreshCw className="h-4 w-4 mr-2" />
           Refresh Data
         </Button>
       </div>
@@ -71,6 +73,7 @@ const UserMemberships = () => {
               <TableRow>
                 <TableHead>User</TableHead>
                 <TableHead>Plan</TableHead>
+                <TableHead>Price</TableHead>
                 <TableHead>Start Date</TableHead>
                 <TableHead>End Date</TableHead>
                 <TableHead>Status</TableHead>
@@ -79,7 +82,7 @@ const UserMemberships = () => {
             <TableBody>
               {memberships.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8">
+                  <TableCell colSpan={6} className="text-center py-8">
                     No user memberships found.
                   </TableCell>
                 </TableRow>
@@ -97,6 +100,12 @@ const UserMemberships = () => {
                       <span className="text-xs text-gray-500">
                         {membership.membership_plans?.duration_months} months, {membership.membership_plans?.discount_percentage}% discount
                       </span>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center">
+                        <IndianRupee className="h-3 w-3 mr-1" />
+                        {membership.membership_plans?.price || "0.00"}
+                      </div>
                     </TableCell>
                     <TableCell>{format(new Date(membership.start_date), "MMM dd, yyyy")}</TableCell>
                     <TableCell>{format(new Date(membership.end_date), "MMM dd, yyyy")}</TableCell>

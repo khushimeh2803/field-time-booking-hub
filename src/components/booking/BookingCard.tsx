@@ -53,7 +53,7 @@ const BookingCard = ({ booking, sportName, onRateBooking, onCancellationRequest 
               </p>
             </div>
             <div className="mt-2 md:mt-0 text-right">
-              <p className="font-bold text-lg">${booking.price.toFixed(2)}</p>
+              <p className="font-bold text-lg">₹{booking.price.toFixed(2)}</p>
               <p className="text-sm text-muted-foreground">{booking.paymentMethod}</p>
             </div>
           </div>

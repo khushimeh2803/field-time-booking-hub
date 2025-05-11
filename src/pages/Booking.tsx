@@ -16,7 +16,7 @@ import {
   Clock, 
   CreditCard, 
   Building, 
-  DollarSign, 
+  IndianRupee, 
   Tag, 
 } from "lucide-react";
 import { Label } from "@/components/ui/label";
@@ -75,6 +75,11 @@ const Booking = () => {
   const [applyMembership, setApplyMembership] = useState(false);
   const [membershipDiscount, setMembershipDiscount] = useState(0);
   
+  // Feedback history - for 10% discount if user has provided feedback previously
+  const [hasFeedbackHistory, setHasFeedbackHistory] = useState(false);
+  const [applyFeedbackDiscount, setApplyFeedbackDiscount] = useState(false);
+  const [feedbackDiscount] = useState(10); // Fixed 10% discount for feedback
+  
   // For card payment (mock)
   const [cardName, setCardName] = useState("");
   const [cardNumber, setCardNumber] = useState("");
@@ -125,7 +130,32 @@ const Booking = () => {
     // Check if user has membership and fetch available promo codes
     checkUserMembership();
     fetchPromoCodes();
+    checkUserFeedbackHistory();
   }, [location.search]);
+
+  // Check if user has a feedback history for discount eligibility
+  const checkUserFeedbackHistory = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Check if user has submitted any feedback
+      const { data: feedbackData, error } = await supabase
+        .from('booking_feedback')
+        .select('id')
+        .eq('user_id', user.id)
+        .limit(1);
+
+      if (error) throw error;
+      
+      // If user has feedback history, they are eligible for a 10% discount
+      if (feedbackData && feedbackData.length > 0) {
+        setHasFeedbackHistory(true);
+      }
+    } catch (error) {
+      console.error("Error checking feedback history:", error);
+    }
+  };
 
   // Fetch ground details from Supabase
   const fetchGroundDetails = async (id: string) => {
@@ -220,7 +250,7 @@ const Booking = () => {
       });
       
       // Calculate new total with promo discount
-      calculateTotal(foundPromo.discount_percentage, applyMembership ? membershipDiscount : 0);
+      calculateTotal(foundPromo.discount_percentage, applyMembership ? membershipDiscount : 0, applyFeedbackDiscount ? feedbackDiscount : 0);
       
       toast({
         title: "Promo Code Applied",
@@ -239,17 +269,23 @@ const Booking = () => {
   const removePromo = () => {
     setAppliedPromo(null);
     setPromoCode("");
-    calculateTotal(0, applyMembership ? membershipDiscount : 0);
+    calculateTotal(0, applyMembership ? membershipDiscount : 0, applyFeedbackDiscount ? feedbackDiscount : 0);
   };
 
   // Toggle membership application
   const toggleMembership = (checked: boolean) => {
     setApplyMembership(checked);
-    calculateTotal(appliedPromo?.discount || 0, checked ? membershipDiscount : 0);
+    calculateTotal(appliedPromo?.discount || 0, checked ? membershipDiscount : 0, applyFeedbackDiscount ? feedbackDiscount : 0);
+  };
+
+  // Toggle feedback discount application
+  const toggleFeedbackDiscount = (checked: boolean) => {
+    setApplyFeedbackDiscount(checked);
+    calculateTotal(appliedPromo?.discount || 0, applyMembership ? membershipDiscount : 0, checked ? feedbackDiscount : 0);
   };
 
   // Calculate total price with all applicable discounts
-  const calculateTotal = (promoDiscount: number, membershipDiscount: number) => {
+  const calculateTotal = (promoDiscount: number, membershipDiscount: number, feedbackDiscount: number) => {
     let discountedTotal = subtotal;
     
     // Apply promo code discount first
@@ -262,6 +298,12 @@ const Booking = () => {
     if (membershipDiscount > 0) {
       const membershipDiscountAmount = (discountedTotal * membershipDiscount) / 100;
       discountedTotal -= membershipDiscountAmount;
+    }
+    
+    // Finally apply feedback discount if applicable
+    if (feedbackDiscount > 0) {
+      const feedbackDiscountAmount = (discountedTotal * feedbackDiscount) / 100;
+      discountedTotal -= feedbackDiscountAmount;
     }
     
     setTotal(discountedTotal);
@@ -402,11 +444,11 @@ const Booking = () => {
                   
                   <div className="flex items-center space-x-4">
                     <div className="bg-primary/10 p-3 rounded-full">
-                      <DollarSign className="h-6 w-6 text-primary" />
+                      <IndianRupee className="h-6 w-6 text-primary" />
                     </div>
                     <div>
                       <div className="text-sm text-muted-foreground">Rate</div>
-                      <div className="font-medium">${groundData?.price_per_hour || "0"} per hour</div>
+                      <div className="font-medium">₹{groundData?.price_per_hour || "0"} per hour</div>
                     </div>
                   </div>
                 </div>
@@ -488,6 +530,31 @@ const Booking = () => {
                     </div>
                   )}
                   
+                  {/* Feedback Discount */}
+                  {hasFeedbackHistory && (
+                    <div className="mb-8">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="feedback-discount" 
+                          checked={applyFeedbackDiscount}
+                          onCheckedChange={(checked) => toggleFeedbackDiscount(!!checked)}
+                        />
+                        <label 
+                          htmlFor="feedback-discount" 
+                          className="text-sm flex items-center"
+                        >
+                          <span>Apply feedback discount ({feedbackDiscount}% off)</span>
+                          <span className="ml-1 px-2 py-0.5 bg-primary/10 text-primary text-xs rounded-full">
+                            SAVE ₹{((subtotal * feedbackDiscount) / 100).toFixed(2)}
+                          </span>
+                        </label>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1 ml-6">
+                        As a valued customer who has provided feedback, you're eligible for a special discount!
+                      </p>
+                    </div>
+                  )}
+                  
                   {/* Membership Discount */}
                   {hasMembership && (
                     <div className="mb-8">
@@ -503,7 +570,7 @@ const Booking = () => {
                         >
                           <span>Apply my membership discount ({membershipDiscount}% off)</span>
                           <span className="ml-1 px-2 py-0.5 bg-primary/10 text-primary text-xs rounded-full">
-                            SAVE ${((subtotal * membershipDiscount) / 100).toFixed(2)}
+                            SAVE ₹{((subtotal * membershipDiscount) / 100).toFixed(2)}
                           </span>
                         </label>
                       </div>
@@ -600,7 +667,7 @@ const Booking = () => {
                 <div className="py-4 border-b space-y-3">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Price per hour</span>
-                    <span>${groundData?.price_per_hour || 0}</span>
+                    <span>₹{groundData?.price_per_hour || 0}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Number of hours</span>
@@ -608,20 +675,30 @@ const Booking = () => {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Subtotal</span>
-                    <span>${subtotal}</span>
+                    <span>₹{subtotal}</span>
                   </div>
                   
                   {appliedPromo && (
                     <div className="flex justify-between text-primary">
                       <span>Promo Discount ({appliedPromo.discount}%)</span>
-                      <span>-${(subtotal * appliedPromo.discount / 100).toFixed(2)}</span>
+                      <span>-₹{(subtotal * appliedPromo.discount / 100).toFixed(2)}</span>
                     </div>
                   )}
                   
                   {applyMembership && (
                     <div className="flex justify-between text-primary">
                       <span>Membership Discount ({membershipDiscount}%)</span>
-                      <span>-${((subtotal - (appliedPromo ? (subtotal * appliedPromo.discount / 100) : 0)) * membershipDiscount / 100).toFixed(2)}</span>
+                      <span>-₹{((subtotal - (appliedPromo ? (subtotal * appliedPromo.discount / 100) : 0)) * membershipDiscount / 100).toFixed(2)}</span>
+                    </div>
+                  )}
+                  
+                  {applyFeedbackDiscount && (
+                    <div className="flex justify-between text-primary">
+                      <span>Feedback Discount ({feedbackDiscount}%)</span>
+                      <span>-₹{((subtotal - 
+                        (appliedPromo ? (subtotal * appliedPromo.discount / 100) : 0) - 
+                        (applyMembership ? ((subtotal - (appliedPromo ? (subtotal * appliedPromo.discount / 100) : 0)) * membershipDiscount / 100) : 0)
+                      ) * feedbackDiscount / 100).toFixed(2)}</span>
                     </div>
                   )}
                 </div>
@@ -629,7 +706,7 @@ const Booking = () => {
                 <div className="pt-4">
                   <div className="flex justify-between font-bold text-lg">
                     <span>Total</span>
-                    <span>${total.toFixed(2)}</span>
+                    <span>₹{total.toFixed(2)}</span>
                   </div>
                   <p className="text-xs text-muted-foreground mt-2">
                     {paymentMethod === "venue" 

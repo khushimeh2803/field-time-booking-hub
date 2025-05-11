@@ -1,3 +1,4 @@
+
 import React from "react";
 import { format } from "date-fns";
 import html2canvas from "html2canvas";
@@ -140,7 +141,7 @@ const BookingReceipt = ({ booking }: BookingReceiptProps) => {
           <div className="border-t pt-4 mt-4">
             <div className="flex justify-between items-center">
               <p className="font-semibold">Total Amount</p>
-              <p className="font-bold text-xl">${booking.price.toFixed(2)}</p>
+              <p className="font-bold text-xl">₹{booking.price.toFixed(2)}</p>
             </div>
           </div>
           

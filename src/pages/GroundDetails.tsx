@@ -9,7 +9,7 @@ import {
   Clock, 
   Users, 
   Calendar as CalendarIcon, 
-  DollarSign,
+  IndianRupee,
   Droplets,
   ParkingCircle,
   LampFloor,
@@ -268,24 +268,24 @@ const GroundDetails = () => {
             {/* Ground Details */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
               <div className="bg-muted rounded-lg p-4 flex items-center gap-3">
-                <DollarSign className="h-6 w-6 text-primary" />
+                <IndianRupee className="h-6 w-6 text-primary" />
                 <div>
                   <div className="text-sm text-muted-foreground">Price</div>
-                  <div className="font-semibold">${ground.price} / hour</div>
+                  <div className="font-semibold">₹{ground?.price} / hour</div>
                 </div>
               </div>
               <div className="bg-muted rounded-lg p-4 flex items-center gap-3">
                 <Clock className="h-6 w-6 text-primary" />
                 <div>
                   <div className="text-sm text-muted-foreground">Operating Hours</div>
-                  <div className="font-semibold">{ground.availability}</div>
+                  <div className="font-semibold">{ground?.availability}</div>
                 </div>
               </div>
               <div className="bg-muted rounded-lg p-4 flex items-center gap-3">
                 <Users className="h-6 w-6 text-primary" />
                 <div>
                   <div className="text-sm text-muted-foreground">Capacity</div>
-                  <div className="font-semibold">{ground.capacity}</div>
+                  <div className="font-semibold">{ground?.capacity}</div>
                 </div>
               </div>
             </div>
@@ -404,7 +404,7 @@ const GroundDetails = () => {
               <div className="border-t pt-4 mb-6">
                 <div className="flex justify-between mb-2">
                   <span>Price per hour</span>
-                  <span>${ground.price}</span>
+                  <span>₹{ground?.price}</span>
                 </div>
                 <div className="flex justify-between mb-2">
                   <span>Number of hours</span>
@@ -414,13 +414,13 @@ const GroundDetails = () => {
                 {activeMembership && discountPercentage > 0 && (
                   <div className="flex justify-between mb-2 text-green-600">
                     <span>Membership discount ({discountPercentage}%)</span>
-                    <span>-${(ground.price * selectedTimeSlots.length * discountPercentage / 100).toFixed(2)}</span>
+                    <span>-₹{(ground?.price * selectedTimeSlots.length * discountPercentage / 100).toFixed(2)}</span>
                   </div>
                 )}
                 
                 <div className="flex justify-between font-bold text-lg mt-4">
                   <span>Total</span>
-                  <span>${calculateTotalPrice().toFixed(2)}</span>
+                  <span>₹{calculateTotalPrice().toFixed(2)}</span>
                 </div>
                 
                 {activeMembership && (
@@ -440,7 +440,7 @@ const GroundDetails = () => {
                     const membershipParam = activeMembership ? `&membershipId=${activeMembership.id}` : '';
                     // Include the calculated price
                     const priceParam = `&price=${calculateTotalPrice().toFixed(2)}`;
-                    window.location.href = `/booking?groundId=${ground.id}&date=${selectedDate?.toISOString()}&slots=${selectedTimeSlots.join(',')}${membershipParam}${priceParam}`;
+                    window.location.href = `/booking?groundId=${ground?.id}&date=${selectedDate?.toISOString()}&slots=${selectedTimeSlots.join(',')}${membershipParam}${priceParam}`;
                   }
                 }}
               >
