@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
@@ -56,6 +55,7 @@ const Booking = () => {
   const [hasMembership, setHasMembership] = useState(false);
   const [applyMembership, setApplyMembership] = useState(false);
   const [membershipDiscount, setMembershipDiscount] = useState(0);
+  const [membershipDetails, setMembershipDetails] = useState<{ name: string, price: number } | null>(null);
   
   // Feedback history - for 10% discount if user has provided feedback previously
   const [hasFeedbackHistory, setHasFeedbackHistory] = useState(false);
@@ -180,7 +180,7 @@ const Booking = () => {
       // Check for active membership
       const { data: memberships, error } = await supabase
         .from('user_memberships')
-        .select('*, membership_plans(discount_percentage)')
+        .select('*, membership_plans(*)')
         .eq('user_id', user.id)
         .gte('end_date', today)
         .lt('start_date', today)
@@ -194,6 +194,10 @@ const Booking = () => {
       if (memberships) {
         setHasMembership(true);
         setMembershipDiscount(memberships.membership_plans.discount_percentage || 0);
+        setMembershipDetails({
+          name: memberships.membership_plans.name,
+          price: memberships.membership_plans.price
+        });
       }
     } catch (error) {
       console.error("Error checking membership status:", error);
@@ -426,6 +430,7 @@ const Booking = () => {
                     applyMembership={applyMembership}
                     toggleMembership={toggleMembership}
                     membershipDiscount={membershipDiscount}
+                    membershipDetails={membershipDetails}
                     subtotal={subtotal}
                   />
                   
@@ -466,6 +471,7 @@ const Booking = () => {
                 appliedPromo={appliedPromo}
                 applyMembership={applyMembership}
                 membershipDiscount={membershipDiscount}
+                membershipDetails={membershipDetails}
                 applyFeedbackDiscount={applyFeedbackDiscount}
                 feedbackDiscount={feedbackDiscount}
                 paymentMethod={paymentMethod}

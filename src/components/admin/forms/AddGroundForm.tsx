@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
@@ -33,6 +32,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Loader2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
+import { X } from "lucide-react";
 
 interface AddGroundFormProps {
   open: boolean;
@@ -50,6 +51,7 @@ const formSchema = z.object({
   opening_time: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Invalid time format"),
   closing_time: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Invalid time format"),
   amenities: z.array(z.string()).optional(),
+  additional_sports: z.array(z.string()).optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -87,6 +89,7 @@ const AddGroundForm: React.FC<AddGroundFormProps> = ({ open, onOpenChange, onSuc
       opening_time: "08:00",
       closing_time: "22:00",
       amenities: [],
+      additional_sports: [],
     },
   });
 
@@ -103,6 +106,7 @@ const AddGroundForm: React.FC<AddGroundFormProps> = ({ open, onOpenChange, onSuc
         opening_time: "08:00",
         closing_time: "22:00",
         amenities: [],
+        additional_sports: [],
       });
     }
   }, [open, form]);
@@ -140,6 +144,12 @@ const AddGroundForm: React.FC<AddGroundFormProps> = ({ open, onOpenChange, onSuc
             amenities: values.amenities && values.amenities.length > 0 
               ? values.amenities.map(a => availableAmenities.find(am => am.id === a)?.label || a) 
               : null,
+            additional_sports: values.additional_sports && values.additional_sports.length > 0
+              ? values.additional_sports.map(sportId => {
+                  const sport = sports.find(s => s.id === sportId);
+                  return sport ? sport.name : null;
+                }).filter(Boolean)
+              : null,
           },
         ]);
 
@@ -161,6 +171,44 @@ const AddGroundForm: React.FC<AddGroundFormProps> = ({ open, onOpenChange, onSuc
       });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  // Helper function to get the selected additional sports
+  const getSelectedAdditionalSports = () => {
+    const additionalSports = form.watch('additional_sports') || [];
+    return sports
+      .filter(sport => additionalSports.includes(sport.id))
+      .map(sport => ({
+        id: sport.id,
+        name: sport.name
+      }));
+  };
+
+  // Remove a sport from additional sports
+  const removeAdditionalSport = (sportId: string) => {
+    const currentSports = form.getValues('additional_sports') || [];
+    form.setValue(
+      'additional_sports',
+      currentSports.filter(id => id !== sportId)
+    );
+  };
+
+  // Add a sport to additional sports
+  const addAdditionalSport = (sportId: string) => {
+    const primarySportId = form.getValues('sport_id');
+    if (sportId === primarySportId) {
+      toast({
+        variant: "destructive",
+        title: "Invalid Selection",
+        description: "You cannot add the primary sport as an additional sport",
+      });
+      return;
+    }
+    
+    const currentSports = form.getValues('additional_sports') || [];
+    if (!currentSports.includes(sportId)) {
+      form.setValue('additional_sports', [...currentSports, sportId]);
     }
   };
 
@@ -192,9 +240,19 @@ const AddGroundForm: React.FC<AddGroundFormProps> = ({ open, onOpenChange, onSuc
                 name="sport_id"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Sport Type</FormLabel>
+                    <FormLabel>Primary Sport Type</FormLabel>
                     <Select 
-                      onValueChange={field.onChange} 
+                      onValueChange={(value) => {
+                        // Remove from additional sports if it's now the primary sport
+                        const additionalSports = form.getValues('additional_sports') || [];
+                        if (additionalSports.includes(value)) {
+                          form.setValue(
+                            'additional_sports', 
+                            additionalSports.filter(id => id !== value)
+                          );
+                        }
+                        field.onChange(value);
+                      }} 
                       defaultValue={field.value}
                     >
                       <FormControl>
@@ -215,6 +273,65 @@ const AddGroundForm: React.FC<AddGroundFormProps> = ({ open, onOpenChange, onSuc
                 )}
               />
             </div>
+            
+            {/* Additional Sports Section */}
+            <FormField
+              control={form.control}
+              name="additional_sports"
+              render={() => (
+                <FormItem>
+                  <div className="mb-2">
+                    <FormLabel className="text-base">Additional Sports Available</FormLabel>
+                    <FormDescription>
+                      Select other sports that can be played at this ground
+                    </FormDescription>
+                  </div>
+                  
+                  {/* Display selected sports as badges */}
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {getSelectedAdditionalSports().map(sport => (
+                      <Badge key={sport.id} variant="secondary" className="px-2 py-1">
+                        {sport.name}
+                        <button 
+                          type="button" 
+                          onClick={() => removeAdditionalSport(sport.id)}
+                          className="ml-1 hover:text-destructive"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                    {getSelectedAdditionalSports().length === 0 && (
+                      <p className="text-sm text-muted-foreground">No additional sports selected</p>
+                    )}
+                  </div>
+                  
+                  {/* Dropdown to add more sports */}
+                  <Select
+                    onValueChange={(value) => {
+                      addAdditionalSport(value);
+                    }}
+                    value=""
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Add another sport" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {sports
+                        .filter(sport => sport.id !== form.getValues('sport_id'))
+                        .filter(sport => !(form.getValues('additional_sports') || []).includes(sport.id))
+                        .map((sport) => (
+                          <SelectItem key={sport.id} value={sport.id}>
+                            {sport.name}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </FormItem>
+              )}
+            />
             
             <FormField
               control={form.control}

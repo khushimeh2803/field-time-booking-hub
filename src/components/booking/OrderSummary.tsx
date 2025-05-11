@@ -7,6 +7,7 @@ interface OrderSummaryProps {
   appliedPromo: { code: string, discount: number } | null;
   applyMembership: boolean;
   membershipDiscount: number;
+  membershipDetails?: { name: string, price: number } | null;
   applyFeedbackDiscount: boolean;
   feedbackDiscount: number;
   paymentMethod: string;
@@ -20,6 +21,7 @@ const OrderSummary = ({
   appliedPromo,
   applyMembership,
   membershipDiscount,
+  membershipDetails,
   applyFeedbackDiscount,
   feedbackDiscount,
   paymentMethod
@@ -63,9 +65,16 @@ const OrderSummary = ({
         )}
         
         {applyMembership && (
-          <div className="flex justify-between text-primary">
-            <span>Membership Discount ({membershipDiscount}%)</span>
-            <span>-₹{((subtotal - (appliedPromo ? (subtotal * appliedPromo.discount / 100) : 0)) * membershipDiscount / 100).toFixed(2)}</span>
+          <div className="flex flex-col gap-1">
+            <div className="flex justify-between text-primary">
+              <span>Membership Discount ({membershipDiscount}%)</span>
+              <span>-₹{((subtotal - (appliedPromo ? (subtotal * appliedPromo.discount / 100) : 0)) * membershipDiscount / 100).toFixed(2)}</span>
+            </div>
+            {membershipDetails && (
+              <div className="text-xs text-muted-foreground pl-2">
+                {membershipDetails.name} Membership (₹{membershipDetails.price})
+              </div>
+            )}
           </div>
         )}
         

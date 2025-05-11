@@ -10,6 +10,7 @@ interface DiscountOptionsProps {
   applyMembership: boolean;
   toggleMembership: (checked: boolean) => void;
   membershipDiscount: number;
+  membershipDetails?: { name: string, price: number } | null;
   subtotal: number;
 }
 
@@ -22,6 +23,7 @@ const DiscountOptions = ({
   applyMembership,
   toggleMembership,
   membershipDiscount,
+  membershipDetails,
   subtotal
 }: DiscountOptionsProps) => {
   return (
@@ -70,6 +72,12 @@ const DiscountOptions = ({
               </span>
             </label>
           </div>
+          
+          {membershipDetails && (
+            <div className="ml-6 mt-1 text-xs text-muted-foreground">
+              <p>Membership Plan: {membershipDetails.name} (₹{membershipDetails.price})</p>
+            </div>
+          )}
         </div>
       )}
     </>
