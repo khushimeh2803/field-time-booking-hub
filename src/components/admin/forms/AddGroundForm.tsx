@@ -32,6 +32,7 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Loader2 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface AddGroundFormProps {
   open: boolean;
@@ -48,9 +49,26 @@ const formSchema = z.object({
   description: z.string().optional(),
   opening_time: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Invalid time format"),
   closing_time: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Invalid time format"),
+  amenities: z.array(z.string()).optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
+
+// List of available amenities
+const availableAmenities = [
+  { id: "changing-rooms", label: "Changing Rooms" },
+  { id: "showers", label: "Showers" },
+  { id: "floodlights", label: "Floodlights" },
+  { id: "parking", label: "Parking" },
+  { id: "spectator-seating", label: "Spectator Seating" },
+  { id: "scoreboard", label: "Scoreboard" },
+  { id: "cafeteria", label: "Cafeteria" },
+  { id: "indoor", label: "Indoor" },
+  { id: "outdoor", label: "Outdoor" },
+  { id: "wifi", label: "Wi-Fi" },
+  { id: "locker", label: "Lockers" },
+  { id: "equipment-rental", label: "Equipment Rental" },
+];
 
 const AddGroundForm: React.FC<AddGroundFormProps> = ({ open, onOpenChange, onSuccess }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -68,14 +86,26 @@ const AddGroundForm: React.FC<AddGroundFormProps> = ({ open, onOpenChange, onSuc
       description: "",
       opening_time: "08:00",
       closing_time: "22:00",
+      amenities: [],
     },
   });
 
   useEffect(() => {
     if (open) {
       fetchSports();
+      form.reset({
+        name: "",
+        sport_id: "",
+        address: "",
+        capacity: 0,
+        price_per_hour: 0,
+        description: "",
+        opening_time: "08:00",
+        closing_time: "22:00",
+        amenities: [],
+      });
     }
-  }, [open]);
+  }, [open, form]);
 
   const fetchSports = async () => {
     try {
@@ -107,6 +137,9 @@ const AddGroundForm: React.FC<AddGroundFormProps> = ({ open, onOpenChange, onSuc
             description: values.description || null,
             opening_time: values.opening_time,
             closing_time: values.closing_time,
+            amenities: values.amenities && values.amenities.length > 0 
+              ? values.amenities.map(a => availableAmenities.find(am => am.id === a)?.label || a) 
+              : null,
           },
         ]);
 
@@ -133,7 +166,7 @@ const AddGroundForm: React.FC<AddGroundFormProps> = ({ open, onOpenChange, onSuc
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add New Ground</DialogTitle>
         </DialogHeader>
@@ -256,6 +289,56 @@ const AddGroundForm: React.FC<AddGroundFormProps> = ({ open, onOpenChange, onSuc
                 )}
               />
             </div>
+            
+            <FormField
+              control={form.control}
+              name="amenities"
+              render={() => (
+                <FormItem>
+                  <div className="mb-4">
+                    <FormLabel className="text-base">Amenities</FormLabel>
+                    <FormDescription>
+                      Select the amenities available at this ground
+                    </FormDescription>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                    {availableAmenities.map((amenity) => (
+                      <FormField
+                        key={amenity.id}
+                        control={form.control}
+                        name="amenities"
+                        render={({ field }) => {
+                          return (
+                            <FormItem
+                              key={amenity.id}
+                              className="flex flex-row items-start space-x-3 space-y-0"
+                            >
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value?.includes(amenity.id)}
+                                  onCheckedChange={(checked) => {
+                                    const currentValues = field.value || [];
+                                    return checked
+                                      ? field.onChange([...currentValues, amenity.id])
+                                      : field.onChange(
+                                          currentValues.filter((value) => value !== amenity.id)
+                                        );
+                                  }}
+                                />
+                              </FormControl>
+                              <FormLabel className="font-normal">
+                                {amenity.label}
+                              </FormLabel>
+                            </FormItem>
+                          );
+                        }}
+                      />
+                    ))}
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             
             <FormField
               control={form.control}
