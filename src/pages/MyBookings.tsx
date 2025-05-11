@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,6 +7,7 @@ import BookingCard from "@/components/booking/BookingCard";
 import BookingFilters from "@/components/booking/BookingFilters";
 import RecentBookings from "@/components/booking/RecentBookings";
 import EmptyBookingState from "@/components/booking/EmptyBookingState";
+import BookingHeader from "@/components/booking/BookingHeader";
 
 const MyBookings = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -156,7 +158,7 @@ const MyBookings = () => {
       const { error } = await supabase
         .from("booking_feedback")
         .insert({
-          booking_id: bookingId,
+          booking_id: bookingId, // This is now a string, matching the expected type
           user_id: user.id,
           rating: rating,
           feedback_date: new Date().toISOString()
@@ -207,14 +209,10 @@ const MyBookings = () => {
 
   return (
     <MainLayout>
-      <section className="bg-gradient-to-r from-primary/90 to-secondary/90 text-white py-12">
-        <div className="container mx-auto px-4 text-center">
-          <h1 className="text-4xl font-bold mb-4">My Bookings</h1>
-          <p className="text-xl max-w-2xl mx-auto">
-            Manage and track all your sports facility bookings.
-          </p>
-        </div>
-      </section>
+      <BookingHeader 
+        title="My Bookings" 
+        description="Manage and track all your sports facility bookings." 
+      />
 
       <section className="py-8 bg-muted">
         <div className="container mx-auto px-4">
