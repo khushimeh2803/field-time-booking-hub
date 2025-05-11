@@ -86,7 +86,7 @@ const MyBookings = () => {
             const { data: feedbackData } = await supabase
               .from("booking_feedback")
               .select("rating")
-              .eq("booking_id", booking.id.toString())
+              .eq("booking_id", booking.id.toString()) // Convert booking.id to string
               .maybeSingle();
 
             return {
