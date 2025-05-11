@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { supabase } from "@/integrations/supabase/client";
@@ -75,7 +76,7 @@ const MyBookings = () => {
               .maybeSingle();
 
             return {
-              id: booking.id, // Using the ID directly, no conversion needed
+              id: booking.id, 
               groundName: groundData?.name || "Unknown Ground",
               sport: groundData?.sport_id || "",
               date: new Date(booking.booking_date),
