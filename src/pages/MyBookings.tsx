@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { supabase } from "@/integrations/supabase/client";
@@ -188,12 +187,37 @@ const MyBookings = () => {
   };
 
   // Handle requesting cancellation
-  const handleCancellationRequest = (bookingId: string) => {
-    // In a real app, this would send a request to the backend
-    toast({
-      title: "Cancellation Request Sent",
-      description: "Your request has been submitted to admin. You will be notified once processed.",
-    });
+  const handleCancelBooking = async (bookingId: string | number) => {
+    try {
+      setIsSubmitting(true);
+      const { error } = await supabase
+        .from("bookings")
+        .update({ status: "cancelled" })
+        .eq("id", bookingId.toString()); // Convert to string here
+      
+      if (error) throw error;
+
+      toast({
+        title: "Booking Cancelled",
+        description: "Your booking has been cancelled.",
+      });
+
+      // Update local state
+      setBookings(bookings.map(booking => 
+        booking.id === bookingId 
+          ? { ...booking, status: "cancelled" } 
+          : booking
+      ));
+    } catch (error: any) {
+      console.error("Error cancelling booking:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to cancel your booking",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Recent bookings (show 2 most recent ones)
@@ -245,7 +269,7 @@ const MyBookings = () => {
                 booking={booking}
                 sportName={getSportName(booking.sport)}
                 onRateBooking={handleRateBooking}
-                onCancellationRequest={handleCancellationRequest}
+                onCancellationRequest={handleCancelBooking}
               />
             ))}
           </div>
