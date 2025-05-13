@@ -3,148 +3,97 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-export interface Booking {
-  id: string;
-  groundName: string;
-  sport: string;
-  date: Date;
-  timeSlots: string[];
-  price: number;
-  status: string;
-  image: string;
-  address: string;
-  paymentMethod: string;
-  completed: boolean;
-  rated: boolean;
-  rating: number;
-  createdAt: string;
-}
-
-interface Sport {
-  id: string;
-  name: string;
-}
-
 export const useBookings = () => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedSport, setSelectedSport] = useState<string>("");
-  const [statusFilter, setStatusFilter] = useState<string>("");
-  const [bookings, setBookings] = useState<Booking[]>([]);
+  // State management
+  const [bookings, setBookings] = useState<any[]>([]);
+  const [recentBookings, setRecentBookings] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [sports, setSports] = useState<Sport[]>([]);
+  const [sports, setSports] = useState<any[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedSport, setSelectedSport] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const { toast } = useToast();
 
+  // Fetch bookings and sports data on component mount
   useEffect(() => {
-    fetchBookings();
-    fetchSports();
-  }, []);
+    const fetchBookings = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) {
+          setIsLoading(false);
+          return;
+        }
 
-  const fetchSports = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("sports")
-        .select("id, name");
+        // Fetch user bookings from Supabase
+        const { data: userBookings, error } = await supabase
+          .from("bookings")
+          .select(`
+            *,
+            grounds (
+              id,
+              name,
+              images,
+              address,
+              sport_id
+            )
+          `)
+          .eq("user_id", user.id)
+          .order("booking_date", { ascending: false });
 
-      if (error) throw error;
-      setSports(data || []);
-    } catch (error) {
-      console.error("Error fetching sports:", error);
-    }
-  };
-
-  const fetchBookings = async () => {
-    try {
-      setIsLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
+        if (error) throw error;
+        
+        // Set all bookings and recent bookings
+        setBookings(userBookings || []);
+        
+        // Get only the most recent 3 bookings for the top section
+        setRecentBookings((userBookings || []).slice(0, 3));
+        
+        // Fetch all sports for the sport filter
+        const { data: sportsData } = await supabase
+          .from("sports")
+          .select("id, name");
+        
+        setSports(sportsData || []);
+      } catch (error) {
+        console.error("Error fetching bookings:", error);
         toast({
           variant: "destructive",
           title: "Error",
-          description: "You must be logged in to view your bookings",
+          description: "Failed to load your bookings."
         });
-        return;
+      } finally {
+        setIsLoading(false);
       }
+    };
 
-      const { data: bookingsData, error } = await supabase
-        .from("bookings")
-        .select(`
-          id,
-          booking_date,
-          start_time,
-          end_time,
-          status,
-          total_amount,
-          payment_status,
-          ground_id,
-          created_at
-        `)
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
+    fetchBookings();
+  }, [toast]);
 
-      if (error) throw error;
+  // Filter bookings based on search term, selected sport, and status
+  const filteredBookings = bookings.filter((booking: any) => {
+    const matchesSearch = booking.grounds?.name.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesSport = selectedSport 
+      ? booking.grounds?.sport_id === selectedSport 
+      : true;
+    
+    const matchesStatus = statusFilter === "all" 
+      ? true 
+      : booking.status === statusFilter;
+    
+    return matchesSearch && matchesSport && matchesStatus;
+  });
 
-      // Fetch ground details for each booking
-      if (bookingsData && bookingsData.length > 0) {
-        const enhancedBookings = await Promise.all(
-          bookingsData.map(async (booking) => {
-            // Get ground details
-            const { data: groundData } = await supabase
-              .from("grounds")
-              .select("name, address, sport_id, images")
-              .eq("id", booking.ground_id)
-              .single();
-
-            // Format time slots
-            const timeSlots = [`${booking.start_time} - ${booking.end_time}`];
-
-            // Check if booking was already rated in feedback system
-            const { data: feedbackData } = await supabase
-              .from("booking_feedback")
-              .select("rating")
-              .eq("booking_id", booking.id.toString())
-              .maybeSingle();
-
-            return {
-              id: booking.id.toString(),
-              groundName: groundData?.name || "Unknown Ground",
-              sport: groundData?.sport_id || "",
-              date: new Date(booking.booking_date),
-              timeSlots,
-              price: parseFloat(booking.total_amount),
-              status: booking.status,
-              image: groundData?.images?.[0] || "https://images.unsplash.com/photo-1487466365202-1afdb86c764e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1752&q=80",
-              address: groundData?.address || "Address unavailable",
-              paymentMethod: booking.payment_status === "paid" ? "Credit Card" : "Pay at Venue",
-              completed: new Date() > new Date(booking.booking_date),
-              rated: !!feedbackData,
-              rating: feedbackData?.rating || 0,
-              createdAt: booking.created_at
-            };
-          })
-        );
-
-        setBookings(enhancedBookings);
-      } else {
-        setBookings([]);
-      }
-    } catch (error: any) {
-      console.error("Error fetching bookings:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: error.message || "Failed to load your bookings",
-      });
-    } finally {
-      setIsLoading(false);
-    }
+  // Helper function to get sport name from sport ID
+  const getSportName = (sportId: string): string => {
+    const sport = sports.find((s: any) => s.id === sportId);
+    return sport ? sport.name : "Unknown Sport";
   };
 
   // Handle rating a booking
   const handleRateBooking = async (bookingId: string, rating: number) => {
     try {
-      // Get authenticated user
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
@@ -156,97 +105,82 @@ export const useBookings = () => {
         return;
       }
 
-      // Save rating to the database
-      const { error } = await supabase
+      // Check if user has already rated this booking
+      const { data: existingRating } = await supabase
         .from("booking_feedback")
-        .insert({
-          booking_id: bookingId,
-          user_id: user.id,
-          rating: rating,
-          feedback_date: new Date().toISOString()
-        });
-
-      if (error) throw error;
-
-      // Update local state
-      setBookings(bookings.map(booking => 
-        booking.id === bookingId 
-          ? { ...booking, rated: true, rating } 
-          : booking
-      ));
+        .select("*")
+        .eq("booking_id", bookingId)
+        .eq("user_id", user.id)
+        .single();
+      
+      if (existingRating) {
+        // Update existing rating
+        const { error } = await supabase
+          .from("booking_feedback")
+          .update({ rating })
+          .eq("id", existingRating.id);
+          
+        if (error) throw error;
+      } else {
+        // Insert new rating
+        const { error } = await supabase
+          .from("booking_feedback")
+          .insert({
+            booking_id: bookingId,
+            user_id: user.id,
+            rating
+          });
+          
+        if (error) throw error;
+      }
       
       toast({
         title: "Thank You!",
-        description: "Your rating has been submitted.",
+        description: "Your rating has been submitted successfully."
       });
-    } catch (error: any) {
+      
+    } catch (error) {
       console.error("Error submitting rating:", error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message || "Failed to submit your rating",
+        description: "Failed to submit your rating."
       });
     }
   };
 
-  // Handle requesting cancellation
+  // Handle canceling a booking
   const handleCancelBooking = async (bookingId: string) => {
     try {
-      setIsSubmitting(true);
       const { error } = await supabase
         .from("bookings")
         .update({ status: "cancelled" })
         .eq("id", bookingId);
-      
+        
       if (error) throw error;
-
+      
+      // Update the local state to reflect the change
+      setBookings(prevBookings => 
+        prevBookings.map(booking => 
+          booking.id === bookingId 
+            ? { ...booking, status: "cancelled" } 
+            : booking
+        )
+      );
+      
       toast({
         title: "Booking Cancelled",
-        description: "Your booking has been cancelled.",
+        description: "Your booking has been cancelled successfully."
       });
-
-      // Update local state
-      setBookings(bookings.map(booking => 
-        booking.id === bookingId 
-          ? { ...booking, status: "cancelled" } 
-          : booking
-      ));
-    } catch (error: any) {
+      
+    } catch (error) {
       console.error("Error cancelling booking:", error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message || "Failed to cancel your booking",
+        description: "Failed to cancel your booking."
       });
-    } finally {
-      setIsSubmitting(false);
     }
-  };
-
-  // Filter bookings based on selected filters
-  const filteredBookings = bookings.filter(booking => {
-    // Filter by search term
-    const matchesSearch = booking.groundName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         booking.address.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    // Filter by sport
-    const matchesSport = !selectedSport || selectedSport === "all" || booking.sport === selectedSport;
-    
-    // Filter by status
-    const matchesStatus = !statusFilter || statusFilter === "all" || booking.status === statusFilter;
-    
-    return matchesSearch && matchesSport && matchesStatus;
-  });
-
-  // Recent bookings (show 2 most recent ones)
-  const recentBookings = [...bookings].sort((a, b) => 
-    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  ).slice(0, 2);
-
-  // Get sport name from id
-  const getSportName = (sportId: string) => {
-    const sport = sports.find(s => s.id === sportId);
-    return sport ? sport.name : "Unknown Sport";
   };
 
   return {
@@ -260,7 +194,6 @@ export const useBookings = () => {
     recentBookings,
     sports,
     isLoading,
-    isSubmitting,
     getSportName,
     handleRateBooking,
     handleCancelBooking
