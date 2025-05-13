@@ -189,13 +189,13 @@ const MyBookings = () => {
   };
 
   // Handle requesting cancellation
-  const handleCancelBooking = async (bookingId: string | number) => {
+  const handleCancelBooking = async (bookingId: string) => {
     try {
       setIsSubmitting(true);
       const { error } = await supabase
         .from("bookings")
         .update({ status: "cancelled" })
-        .eq("id", bookingId.toString()); // Convert to string here
+        .eq("id", bookingId); // No need to convert to string, bookingId is already a string
       
       if (error) throw error;
 
@@ -206,7 +206,7 @@ const MyBookings = () => {
 
       // Update local state
       setBookings(bookings.map(booking => 
-        booking.id === bookingId.toString() 
+        booking.id === bookingId 
           ? { ...booking, status: "cancelled" } 
           : booking
       ));
