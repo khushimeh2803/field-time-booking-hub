@@ -1,6 +1,7 @@
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { CardDetailSetters } from "@/hooks/usePaymentMethod";
 
 interface CardDetailsFormProps {
   cardDetails: {
@@ -9,12 +10,7 @@ interface CardDetailsFormProps {
     cardExpiry: string;
     cardCvc: string;
   };
-  setCardDetails: {
-    setCardName: (name: string) => void;
-    setCardNumber: (number: string) => void;
-    setCardExpiry: (expiry: string) => void;
-    setCvc: (cvc: string) => void;
-  };
+  setCardDetails: CardDetailSetters;
   required: boolean;
 }
 

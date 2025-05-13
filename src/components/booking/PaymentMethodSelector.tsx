@@ -3,22 +3,13 @@ import { RadioGroup } from "@/components/ui/radio-group";
 import { Building, CreditCard } from "lucide-react";
 import PaymentOption from "./payment/PaymentOption";
 import CardDetailsForm from "./payment/CardDetailsForm";
+import { CardDetails, CardDetailSetters } from "@/hooks/usePaymentMethod";
 
 interface PaymentMethodSelectorProps {
   paymentMethod: string;
   setPaymentMethod: (method: string) => void;
-  cardDetails: {
-    cardName: string;
-    cardNumber: string;
-    cardExpiry: string;
-    cardCvc: string;
-  };
-  setCardDetails: {
-    setCardName: (name: string) => void;
-    setCardNumber: (number: string) => void;
-    setCardExpiry: (expiry: string) => void;
-    setCvc: (cvc: string) => void;
-  };
+  cardDetails: CardDetails;
+  setCardDetails: CardDetailSetters;
 }
 
 const PaymentMethodSelector = ({
