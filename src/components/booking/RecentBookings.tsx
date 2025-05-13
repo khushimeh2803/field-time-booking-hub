@@ -1,56 +1,36 @@
 
 import { format } from "date-fns";
-import { Calendar, Clock } from "lucide-react";
-
-interface RecentBooking {
-  id: string; // Ensure this is consistently typed as string
-  groundName: string;
-  date: Date;
-  timeSlots: string[];
-  status: string;
-  price: number;
-  image: string;
-}
+import { Link } from "react-router-dom";
+import { CalendarDays } from "lucide-react";
+import { Booking } from "@/hooks/useBookings";
 
 interface RecentBookingsProps {
-  bookings: RecentBooking[];
+  bookings: Booking[];
 }
 
 const RecentBookings = ({ bookings }: RecentBookingsProps) => {
-  if (bookings.length === 0) return null;
+  if (!bookings || bookings.length === 0) {
+    return null;
+  }
 
   return (
-    <div className="mb-8">
-      <h2 className="text-2xl font-bold mb-4">Recent Bookings</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="bg-white rounded-xl shadow-md p-6 mb-8">
+      <h2 className="text-xl font-semibold mb-4">Recent Bookings</h2>
+      <div className="space-y-4">
         {bookings.map((booking) => (
-          <div key={`recent-${booking.id}`} className="bg-white rounded-lg shadow p-4 flex gap-4">
-            <div className="w-20 h-20 flex-shrink-0">
-              <img 
-                src={booking.image} 
-                alt={booking.groundName} 
-                className="w-full h-full object-cover rounded"
-              />
+          <div key={booking.id} className="flex items-start border-b pb-4 last:border-0 last:pb-0">
+            <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mr-4">
+              <CalendarDays className="h-6 w-6 text-primary" />
             </div>
-            <div className="flex-grow">
-              <h3 className="font-semibold">{booking.groundName}</h3>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Calendar className="h-3 w-3" />
+            <div className="flex-1">
+              <h3 className="font-medium">{booking.groundName}</h3>
+              <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted-foreground">
                 <span>{format(booking.date, "MMM d, yyyy")}</span>
+                <span className="capitalize">{booking.status}</span>
               </div>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Clock className="h-3 w-3" />
-                <span>{booking.timeSlots.join(", ")}</span>
-              </div>
-              <div className="mt-2 flex items-center justify-between">
-                <span className={`px-2 py-0.5 rounded-full text-xs ${
-                  booking.status === 'confirmed' ? 'bg-green-100 text-green-800' :
-                  booking.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'
-                }`}>
-                  {booking.status}
-                </span>
-                <span className="font-semibold">${booking.price}</span>
-              </div>
+            </div>
+            <div className="text-right">
+              <span className="font-semibold">₹{booking.price.toFixed(2)}</span>
             </div>
           </div>
         ))}
