@@ -42,7 +42,11 @@ const TimeSlotSelector = ({
     };
     
     setSlots(generateTimeSlots());
-  }, [openingTime, closingTime]);
+    
+    // Reset selected slots when opening/closing time changes
+    setSelectedSlots([]);
+    onSlotsChange([]);
+  }, [openingTime, closingTime, onSlotsChange]);
 
   // Check booked slots for selected date and ground
   useEffect(() => {
@@ -93,7 +97,11 @@ const TimeSlotSelector = ({
     };
     
     fetchBookedSlots();
-  }, [groundId, selectedDate, toast]);
+    
+    // Reset selected slots when date changes
+    setSelectedSlots([]);
+    onSlotsChange([]);
+  }, [groundId, selectedDate, toast, onSlotsChange]);
 
   const handleSlotClick = (slot: string) => {
     // If slot is already booked, don't allow selection
@@ -112,8 +120,8 @@ const TimeSlotSelector = ({
     
     // Sort slots chronologically
     newSelectedSlots.sort((a, b) => {
-      const aStart = Number(a.split(":")[0]);
-      const bStart = Number(b.split(":")[0]);
+      const aStart = parseInt(a.split(":")[0]);
+      const bStart = parseInt(b.split(":")[0]);
       return aStart - bStart;
     });
     
@@ -129,10 +137,10 @@ const TimeSlotSelector = ({
     if (selectedSlots.length === 0 || selected) return true;
     
     // Check if slot is adjacent to selected slots for continuity
-    const [slotStartHour] = slot.split(":").map(Number);
+    const slotStartHour = parseInt(slot.split(":")[0]);
     
     return selectedSlots.some(selectedSlot => {
-      const [selectedStartHour] = selectedSlot.split(":").map(Number);
+      const selectedStartHour = parseInt(selectedSlot.split(":")[0]);
       return Math.abs(slotStartHour - selectedStartHour) === 1;
     });
   };
@@ -150,7 +158,7 @@ const TimeSlotSelector = ({
               key={slot}
               type="button"
               variant={isSelected ? "default" : isBooked ? "outline" : "secondary"}
-              disabled={isBooked || !selectable && !isSelected}
+              disabled={isBooked || (!selectable && !isSelected)}
               onClick={() => handleSlotClick(slot)}
               className={`text-sm ${isBooked ? "opacity-50 line-through" : ""}`}
             >

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,6 +15,7 @@ const MyBookings = () => {
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [bookings, setBookings] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [sports, setSports] = useState<any[]>([]);
   const { toast } = useToast();
 
@@ -204,7 +206,7 @@ const MyBookings = () => {
 
       // Update local state
       setBookings(bookings.map(booking => 
-        booking.id === bookingId 
+        booking.id === bookingId.toString() 
           ? { ...booking, status: "cancelled" } 
           : booking
       ));
