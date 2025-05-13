@@ -13,7 +13,7 @@ interface CardDetailsFormProps {
     setCardName: (name: string) => void;
     setCardNumber: (number: string) => void;
     setCardExpiry: (expiry: string) => void;
-    setCardCvc: (cvc: string) => void;
+    setCvc: (cvc: string) => void;
   };
   required: boolean;
 }
