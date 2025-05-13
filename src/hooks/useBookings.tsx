@@ -1,7 +1,23 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+
+// Export the Booking type so it can be used in other components
+export interface Booking {
+  id: string;
+  groundName: string;
+  image: string;
+  date: Date;
+  timeSlots: string[];
+  status: string;
+  price: number;
+  address: string;
+  sport: string;
+  completed: boolean;
+  rated: boolean;
+  rating: number;
+  paymentMethod: string;
+}
 
 export const useBookings = () => {
   // State management

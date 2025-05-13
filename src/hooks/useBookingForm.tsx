@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -376,7 +375,7 @@ export const useBookingForm = () => {
     setCardName,
     setCardNumber,
     setCardExpiry,
-    setCardCvc
+    setCvc: setCardCvc  // Fix this line to make the property name match what CardDetailsForm expects
   };
 
   return {
