@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { supabase } from "@/integrations/supabase/client";
@@ -124,7 +123,6 @@ const MyBookings = () => {
     }
   };
 
-  // Filter bookings based on selected filters
   const filteredBookings = bookings.filter(booking => {
     // Filter by search term
     const matchesSearch = booking.groundName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -139,7 +137,6 @@ const MyBookings = () => {
     return matchesSearch && matchesSport && matchesStatus;
   });
 
-  // Handle rating a booking
   const handleRateBooking = async (bookingId: string, rating: number) => {
     try {
       // Get authenticated user
@@ -187,7 +184,6 @@ const MyBookings = () => {
     }
   };
 
-  // Handle requesting cancellation
   const handleCancellationRequest = (bookingId: string) => {
     // In a real app, this would send a request to the backend
     toast({
@@ -196,12 +192,10 @@ const MyBookings = () => {
     });
   };
 
-  // Recent bookings (show 2 most recent ones)
   const recentBookings = [...bookings].sort((a, b) => 
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   ).slice(0, 2);
 
-  // Get sport name from id
   const getSportName = (sportId: string) => {
     const sport = sports.find(s => s.id === sportId);
     return sport ? sport.name : "Unknown Sport";

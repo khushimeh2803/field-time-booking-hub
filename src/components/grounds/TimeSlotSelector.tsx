@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { timeSlotMap } from "@/utils/timeSlotUtils";
@@ -10,6 +9,8 @@ interface TimeSlotSelectorProps {
   selectedDate: Date | null;
   selectedSlots: string[];
   onSlotsChange: (slots: string[]) => void;
+  openingTime?: string;
+  closingTime?: string;
 }
 
 const TimeSlotSelector = ({
@@ -17,6 +18,8 @@ const TimeSlotSelector = ({
   selectedDate,
   selectedSlots,
   onSlotsChange,
+  openingTime,
+  closingTime,
 }: TimeSlotSelectorProps) => {
   const [availableSlots, setAvailableSlots] = useState<string[]>([]);
   const [bookedSlots, setBookedSlots] = useState<string[]>([]);
