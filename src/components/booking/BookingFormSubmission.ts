@@ -100,6 +100,44 @@ export const useBookingSubmission = ({
         return;
       }
 
+      // Check if the slot is already booked by someone else
+      const formattedDate = bookingDate.toISOString().split('T')[0];
+      const { data: existingBookings, error: checkError } = await supabase
+        .from("bookings")
+        .select("id")
+        .eq("ground_id", groundId)
+        .eq("booking_date", formattedDate)
+        .in("status", ["pending", "confirmed"])
+        .or(`start_time.lte.${lastSlot},end_time.gte.${firstSlot}`);
+
+      if (checkError) throw checkError;
+
+      if (existingBookings && existingBookings.length > 0) {
+        toast({
+          variant: "destructive",
+          title: "Slot Unavailable",
+          description: "This time slot has just been booked by someone else. Please select another time slot."
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Validate that selected time slots are in the future
+      const now = new Date();
+      const bookingDateTime = new Date(bookingDate);
+      const [hours, minutes] = firstSlot.split(':');
+      bookingDateTime.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
+
+      if (bookingDateTime <= now) {
+        toast({
+          variant: "destructive",
+          title: "Invalid Time Slot",
+          description: "You cannot book time slots in the past."
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
       // Create booking in Supabase
       const { data: bookingData, error } = await supabase
         .from("bookings")

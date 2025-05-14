@@ -13,6 +13,8 @@ interface BookingDatePickerProps {
 const BookingDatePicker = ({ selectedDate, onDateChange }: BookingDatePickerProps) => {
   // Generate available dates (today and next 30 days)
   const today = new Date();
+  today.setHours(0, 0, 0, 0); // Set to beginning of day for consistent comparison
+  
   const oneMonthLater = new Date();
   oneMonthLater.setMonth(oneMonthLater.getMonth() + 1);
 
@@ -35,8 +37,10 @@ const BookingDatePicker = ({ selectedDate, onDateChange }: BookingDatePickerProp
             selected={selectedDate}
             onSelect={(date) => date && onDateChange(date)}
             disabled={(date) => {
-              // Disable past dates
-              return date < new Date(today.setHours(0, 0, 0, 0)) ||
+              // Disable past dates (comparing date objects by their day)
+              const dateWithoutTime = new Date(date);
+              dateWithoutTime.setHours(0, 0, 0, 0);
+              return dateWithoutTime < today ||
                 // Disable dates more than 1 month in the future
                 date > oneMonthLater;
             }}

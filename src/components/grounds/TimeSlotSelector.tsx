@@ -1,171 +1,234 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
+import { timeSlotMap } from "@/utils/timeSlotUtils";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface TimeSlotSelectorProps {
-  openingTime: string;
-  closingTime: string;
-  selectedDate: Date;
   groundId: string;
+  selectedDate: Date | null;
+  selectedSlots: string[];
   onSlotsChange: (slots: string[]) => void;
 }
 
 const TimeSlotSelector = ({
-  openingTime,
-  closingTime,
-  selectedDate,
   groundId,
-  onSlotsChange
+  selectedDate,
+  selectedSlots,
+  onSlotsChange,
 }: TimeSlotSelectorProps) => {
-  const [slots, setSlots] = useState<string[]>([]);
-  const [selectedSlots, setSelectedSlots] = useState<string[]>([]);
+  const [availableSlots, setAvailableSlots] = useState<string[]>([]);
   const [bookedSlots, setBookedSlots] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  // Generate time slots based on opening and closing times
-  useEffect(() => {
-    const generateTimeSlots = () => {
-      const slots = [];
-      const [openHour] = openingTime.split(":").map(Number);
-      const [closeHour] = closingTime.split(":").map(Number);
+  // Convert slots to array of time strings for comparison
+  const getTimeRange = (start: string, end: string): string[] => {
+    const slots = [];
+    const allSlots = Object.entries(timeSlotMap);
+    let capture = false;
+
+    for (const [id, timeRange] of allSlots) {
+      const slotStart = timeRange.split(" - ")[0];
       
-      for (let hour = openHour; hour < closeHour; hour++) {
-        const startHour = hour.toString().padStart(2, "0");
-        const endHour = (hour + 1).toString().padStart(2, "0");
-        slots.push(`${startHour}:00 - ${endHour}:00`);
+      if (slotStart === start) {
+        capture = true;
       }
       
-      return slots;
-    };
-    
-    setSlots(generateTimeSlots());
-  }, [openingTime, closingTime]);
-
-  // Check booked slots for selected date and ground
-  useEffect(() => {
-    const fetchBookedSlots = async () => {
-      if (!groundId || !selectedDate) return;
-      
-      try {
-        setIsLoading(true);
-        const dateString = selectedDate.toISOString().split('T')[0];
-        
-        const { data, error } = await supabase
-          .from("bookings")
-          .select("start_time, end_time")
-          .eq("ground_id", groundId)
-          .eq("booking_date", dateString)
-          .in("status", ["confirmed", "pending"]);
-          
-        if (error) throw error;
-        
-        if (data && data.length > 0) {
-          // Extract booked time slots
-          const bookedTimes: string[] = [];
-          data.forEach(booking => {
-            const [startHour] = booking.start_time.split(":").map(Number);
-            const [endHour] = booking.end_time.split(":").map(Number);
-            
-            for (let hour = startHour; hour < endHour; hour++) {
-              const startHourStr = hour.toString().padStart(2, "0");
-              const endHourStr = (hour + 1).toString().padStart(2, "0");
-              bookedTimes.push(`${startHourStr}:00 - ${endHourStr}:00`);
-            }
-          });
-          
-          setBookedSlots(bookedTimes);
-        } else {
-          setBookedSlots([]);
-        }
-      } catch (error: any) {
-        console.error("Error checking availability:", error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to check availability"
-        });
-      } finally {
-        setIsLoading(false);
+      if (capture) {
+        slots.push(id);
       }
-    };
-    
-    fetchBookedSlots();
-  }, [groundId, selectedDate, toast]);
-
-  const handleSlotClick = (slot: string) => {
-    // If slot is already booked, don't allow selection
-    if (bookedSlots.includes(slot)) return;
-    
-    const newSelectedSlots = [...selectedSlots];
-    
-    if (newSelectedSlots.includes(slot)) {
-      // Deselect if already selected
-      const index = newSelectedSlots.indexOf(slot);
-      newSelectedSlots.splice(index, 1);
-    } else {
-      // Add to selection
-      newSelectedSlots.push(slot);
+      
+      if (timeRange.split(" - ")[1] === end) {
+        break;
+      }
     }
     
-    // Sort slots chronologically
-    newSelectedSlots.sort((a, b) => {
-      const aStart = Number(a.split(":")[0]);
-      const bStart = Number(b.split(":")[0]);
-      return aStart - bStart;
-    });
-    
-    setSelectedSlots(newSelectedSlots);
-    onSlotsChange(newSelectedSlots);
+    return slots;
   };
 
-  const isSlotSelectable = (slot: string, selected: boolean) => {
-    // If slot is already booked, it's not selectable
-    if (bookedSlots.includes(slot)) return false;
+  // Fetch booked slots when date or ground changes
+  useEffect(() => {
+    if (groundId && selectedDate) {
+      fetchBookedSlots();
+    }
+  }, [groundId, selectedDate]);
+
+  const fetchBookedSlots = async () => {
+    if (!selectedDate) return;
     
-    // If no slots selected yet, any slot is selectable
-    if (selectedSlots.length === 0 || selected) return true;
-    
-    // Check if slot is adjacent to selected slots for continuity
-    const [slotStartHour] = slot.split(":").map(Number);
-    
-    return selectedSlots.some(selectedSlot => {
-      const [selectedStartHour] = selectedSlot.split(":").map(Number);
-      return Math.abs(slotStartHour - selectedStartHour) === 1;
-    });
+    try {
+      setIsLoading(true);
+      
+      const formattedDate = selectedDate.toISOString().split('T')[0];
+      
+      const { data: bookingsData, error } = await supabase
+        .from("bookings")
+        .select("start_time, end_time")
+        .eq("ground_id", groundId)
+        .eq("booking_date", formattedDate)
+        .in("status", ["pending", "confirmed"]);
+        
+      if (error) throw error;
+
+      // Get all booked time slots
+      let booked: string[] = [];
+      
+      for (const booking of bookingsData || []) {
+        const bookedSlotIds = getTimeRange(booking.start_time, booking.end_time);
+        booked = [...booked, ...bookedSlotIds];
+      }
+      
+      setBookedSlots(booked);
+
+      // Generate available slots based on current time for today
+      const isToday = selectedDate.toDateString() === new Date().toDateString();
+      const currentHour = new Date().getHours();
+      const currentMinute = new Date().getMinutes();
+      
+      const availableSlotIds = Object.entries(timeSlotMap)
+        .filter(([id, timeRange]) => {
+          if (booked.includes(id)) return false; // Skip already booked slots
+          
+          // If today, check if time has already passed
+          if (isToday) {
+            const slotHour = parseInt(timeRange.split(":")[0]);
+            const slotMinute = parseInt(timeRange.split(":")[1].split(" -")[0]);
+            
+            // Allow booking only if slot starts at least 30 minutes in the future
+            if (slotHour < currentHour || (slotHour === currentHour && slotMinute <= currentMinute + 30)) {
+              return false;
+            }
+          }
+          
+          return true;
+        })
+        .map(([id]) => id);
+        
+      setAvailableSlots(availableSlotIds);
+      
+      // Clear any selected slots that are now invalid
+      const validSelectedSlots = selectedSlots.filter(id => availableSlotIds.includes(id));
+      if (validSelectedSlots.length !== selectedSlots.length) {
+        onSlotsChange(validSelectedSlots);
+        if (selectedSlots.length > 0 && validSelectedSlots.length === 0) {
+          toast({
+            variant: "destructive",
+            title: "Selected slots are no longer available", 
+            description: "The time slots you selected are either already booked or in the past."
+          });
+        }
+      }
+    } catch (error: any) {
+      console.error("Error fetching booked slots:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load booking availability"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  const handleSlotSelect = (slotId: string) => {
+    if (selectedSlots.includes(slotId)) {
+      // If slot is already selected, remove it
+      onSlotsChange(selectedSlots.filter((id) => id !== slotId));
+    } else {
+      // If selecting a new slot, ensure contiguous selection
+      const slotIds = Object.keys(timeSlotMap).map(Number).sort((a, b) => a - b);
+      const numericSlotIds = selectedSlots.map(Number);
+      const selectedMin = Math.min(...numericSlotIds, Infinity);
+      const selectedMax = Math.max(...numericSlotIds, -Infinity);
+      const numericSlotId = Number(slotId);
+      
+      // Allow selection if:
+      // 1. First selection
+      // 2. Adjacent to min selected (one less)
+      // 3. Adjacent to max selected (one more)
+      if (selectedSlots.length === 0 || 
+          numericSlotId === selectedMin - 1 || 
+          numericSlotId === selectedMax + 1) {
+        onSlotsChange([...selectedSlots, slotId]);
+      } else {
+        toast({
+          title: "Time Slot Selection",
+          description: "Please select contiguous time slots only.",
+        });
+      }
+    }
+  };
+
+  if (!selectedDate) {
+    return (
+      <div className="bg-muted p-6 rounded-md text-center">
+        Please select a date first
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-2 gap-2">
-        {slots.map((slot) => {
-          const isSelected = selectedSlots.includes(slot);
-          const isBooked = bookedSlots.includes(slot);
-          const selectable = isSlotSelectable(slot, isSelected);
+      <div className="flex justify-between items-center">
+        <h3 className="font-medium">Available Time Slots</h3>
+        {isLoading && <span className="text-sm text-muted-foreground">Loading...</span>}
+      </div>
+
+      {!isLoading && availableSlots.length === 0 && (
+        <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-md text-center">
+          No available time slots for this date. Please select another date.
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+        {Object.entries(timeSlotMap).map(([id, time]) => {
+          const isBooked = bookedSlots.includes(id);
+          const isSelected = selectedSlots.includes(id);
+          const isAvailable = availableSlots.includes(id);
           
           return (
             <Button
-              key={slot}
-              type="button"
-              variant={isSelected ? "default" : isBooked ? "outline" : "secondary"}
-              disabled={isBooked || !selectable && !isSelected}
-              onClick={() => handleSlotClick(slot)}
-              className={`text-sm ${isBooked ? "opacity-50 line-through" : ""}`}
+              key={id}
+              variant={isSelected ? "default" : "outline"}
+              className={`
+                h-auto py-3 px-4 justify-center text-center
+                ${isBooked ? "bg-gray-100 text-gray-400 border-gray-200" : ""}
+                ${!isAvailable && !isBooked ? "bg-gray-50 text-gray-400" : ""}
+              `}
+              onClick={() => isAvailable && handleSlotSelect(id)}
+              disabled={!isAvailable || isBooked}
             >
-              {slot}
+              <div>
+                <span className="block text-sm">{time}</span>
+                <span className="text-xs block mt-1">
+                  {isBooked 
+                    ? "Booked" 
+                    : !isAvailable 
+                    ? "Unavailable" 
+                    : isSelected 
+                    ? "Selected" 
+                    : "Available"}
+                </span>
+              </div>
             </Button>
           );
         })}
       </div>
-      
-      {isLoading && <p className="text-sm text-muted-foreground">Checking availability...</p>}
-      
-      {bookedSlots.length > 0 && (
-        <p className="text-sm text-muted-foreground">
-          Some time slots are already booked for this date.
-        </p>
+
+      {selectedSlots.length > 0 && (
+        <div className="mt-4 p-3 bg-muted rounded-md">
+          <p className="text-sm font-medium">
+            Selected: {selectedSlots.length} slot{selectedSlots.length !== 1 ? 's' : ''}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {selectedSlots
+              .sort((a, b) => parseInt(a) - parseInt(b))
+              .map((id) => timeSlotMap[id])
+              .join(", ")}
+          </p>
+        </div>
       )}
     </div>
   );

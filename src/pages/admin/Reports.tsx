@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { RefreshCcw } from "lucide-react";
+import { RefreshCcw, Download } from "lucide-react";
 import StatsOverview from "@/components/admin/reports/StatsOverview";
 import BookingsBarChart from "@/components/admin/reports/BookingsBarChart";
 import SportPieChart from "@/components/admin/reports/SportPieChart";
