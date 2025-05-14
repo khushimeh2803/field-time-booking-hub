@@ -321,6 +321,7 @@ const GroundDetails = () => {
                     closingTime={ground.closing_time}
                     selectedDate={selectedDate}
                     groundId={id || ""}
+                    selectedSlots={selectedTimeSlots}
                     onSlotsChange={handleTimeSlotSelect}
                   />
                 </div>
