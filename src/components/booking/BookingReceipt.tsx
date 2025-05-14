@@ -1,3 +1,4 @@
+
 import React from "react";
 import { format } from "date-fns";
 import html2canvas from "html2canvas";
@@ -5,10 +6,18 @@ import jsPDF from "jspdf";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Booking } from "@/hooks/useBookings";
 
 interface BookingReceiptProps {
-  booking: Booking;
+  booking: {
+    id: string; // Ensure this is typed as string
+    groundName: string;
+    date: Date;
+    timeSlots: string[];
+    price: number;
+    status: string;
+    address: string;
+    paymentMethod: string;
+  };
 }
 
 const BookingReceipt = ({ booking }: BookingReceiptProps) => {

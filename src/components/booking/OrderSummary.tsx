@@ -54,7 +54,7 @@ const OrderSummary = ({
         </div>
         <div className="flex justify-between">
           <span className="text-muted-foreground">Subtotal</span>
-          <span>₹{subtotal.toFixed(2)}</span>
+          <span>₹{subtotal}</span>
         </div>
         
         {appliedPromo && (
@@ -99,14 +99,6 @@ const OrderSummary = ({
             ? "You'll pay this amount at the venue before your booking time."
             : "Your card will be charged this amount immediately."}
         </p>
-        
-        {membershipDetails && applyMembership && (
-          <div className="mt-3 p-2 bg-green-50 rounded-md border border-green-200">
-            <p className="text-xs text-green-800">
-              Your {membershipDetails.name} membership is being applied for this booking.
-            </p>
-          </div>
-        )}
       </div>
     </div>
   );

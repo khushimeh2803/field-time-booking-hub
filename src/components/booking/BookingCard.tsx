@@ -1,12 +1,26 @@
+
 import { useState } from "react";
 import { format } from "date-fns";
 import { MapPin, Calendar, Clock, Star as StarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import BookingReceipt from "@/components/booking/BookingReceipt";
-import { Booking } from "@/hooks/useBookings";
 
 interface BookingCardProps {
-  booking: Booking;
+  booking: {
+    id: string; // Ensure this is consistently typed as string
+    groundName: string;
+    sport: string;
+    date: Date;
+    timeSlots: string[];
+    price: number;
+    status: string;
+    image: string;
+    address: string;
+    paymentMethod: string;
+    completed: boolean;
+    rated: boolean;
+    rating: number;
+  };
   sportName: string;
   onRateBooking: (bookingId: string, rating: number) => void;
   onCancellationRequest: (bookingId: string) => void;

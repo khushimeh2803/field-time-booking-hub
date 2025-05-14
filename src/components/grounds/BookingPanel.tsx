@@ -50,9 +50,6 @@ const BookingPanel = ({
     window.location.href = `/booking?${params.toString()}`;
   };
 
-  // Calculate total based on number of selected slots
-  const totalPrice = pricePerHour * selectedTimeSlots.length;
-
   return (
     <div className="bg-white p-6 rounded-xl shadow-md sticky top-20">
       <h2 className="text-xl font-semibold mb-4">Book this venue</h2>
@@ -89,7 +86,7 @@ const BookingPanel = ({
           </div>
           <div className="flex justify-between font-bold">
             <span>Total</span>
-            <span>₹{totalPrice.toFixed(2)}</span>
+            <span>₹{(pricePerHour * selectedTimeSlots.length).toFixed(2)}</span>
           </div>
           
           <Button 
