@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,12 +7,43 @@ import { Button } from "@/components/ui/button";
 import { Edit, Trash2, Plus } from "lucide-react";
 import AddGroundForm from "@/components/admin/forms/AddGroundForm";
 import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 const AdminGrounds = () => {
   const [grounds, setGrounds] = useState<any[]>([]);
   const [sports, setSports] = useState<any[]>([]);
   const [isAddFormOpen, setIsAddFormOpen] = useState(false);
+  const [isEditFormOpen, setIsEditFormOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedGround, setSelectedGround] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+
+  // Edit form state
+  const [editedGround, setEditedGround] = useState({
+    name: "",
+    address: "",
+    sport_id: "",
+    price_per_hour: "",
+    capacity: "",
+    opening_time: "",
+    closing_time: "",
+    description: "",
+    is_active: true,
+    amenities: [] as string[]
+  });
+
+  // Available amenities
+  const availableAmenities = [
+    "Parking", "Changing Rooms", "Showers", "Floodlights", "Spectator Seating", 
+    "Drinking Water", "Equipment Rental", "Refreshments", "Toilets", "First Aid",
+    "Badminton Court", "Cricket Pitch", "Football Field", "Basketball Court"
+  ];
 
   useEffect(() => {
     fetchGrounds();
@@ -52,6 +84,131 @@ const AdminGrounds = () => {
   const getSportName = (sportId: string) => {
     const sport = sports.find(s => s.id === sportId);
     return sport ? sport.name : 'Unknown';
+  };
+
+  const handleOpenEditForm = (ground: any) => {
+    setSelectedGround(ground);
+    setEditedGround({
+      name: ground.name || "",
+      address: ground.address || "",
+      sport_id: ground.sport_id || "",
+      price_per_hour: String(ground.price_per_hour) || "",
+      capacity: String(ground.capacity) || "",
+      opening_time: ground.opening_time || "",
+      closing_time: ground.closing_time || "",
+      description: ground.description || "",
+      is_active: ground.is_active || true,
+      amenities: ground.amenities || []
+    });
+    setIsEditFormOpen(true);
+  };
+
+  const handleOpenDeleteDialog = (ground: any) => {
+    setSelectedGround(ground);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleEditGround = async () => {
+    setIsLoading(true);
+    try {
+      const { error } = await supabase
+        .from("grounds")
+        .update({
+          name: editedGround.name,
+          address: editedGround.address,
+          sport_id: editedGround.sport_id,
+          price_per_hour: parseFloat(editedGround.price_per_hour),
+          capacity: parseInt(editedGround.capacity),
+          opening_time: editedGround.opening_time,
+          closing_time: editedGround.closing_time,
+          description: editedGround.description,
+          is_active: editedGround.is_active,
+          amenities: editedGround.amenities
+        })
+        .eq("id", selectedGround.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Ground Updated",
+        description: "The ground information has been updated successfully."
+      });
+      
+      setIsEditFormOpen(false);
+      fetchGrounds(); // Refresh the grounds list
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to update ground"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteGround = async () => {
+    setIsLoading(true);
+    try {
+      // First check if there are any bookings for this ground
+      const { data: bookings, error: bookingsError } = await supabase
+        .from("bookings")
+        .select("id")
+        .eq("ground_id", selectedGround.id)
+        .limit(1);
+
+      if (bookingsError) throw bookingsError;
+
+      if (bookings && bookings.length > 0) {
+        toast({
+          variant: "destructive",
+          title: "Cannot Delete",
+          description: "This ground has bookings associated with it. Please cancel or delete the bookings first."
+        });
+        setIsLoading(false);
+        setIsDeleteDialogOpen(false);
+        return;
+      }
+
+      const { error } = await supabase
+        .from("grounds")
+        .delete()
+        .eq("id", selectedGround.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Ground Deleted",
+        description: "The ground has been successfully deleted."
+      });
+      
+      setIsDeleteDialogOpen(false);
+      fetchGrounds(); // Refresh the grounds list
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to delete ground"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAmenityToggle = (amenity: string) => {
+    setEditedGround(prev => {
+      if (prev.amenities.includes(amenity)) {
+        return {
+          ...prev,
+          amenities: prev.amenities.filter(a => a !== amenity)
+        };
+      } else {
+        return {
+          ...prev,
+          amenities: [...prev.amenities, amenity]
+        };
+      }
+    });
   };
 
   const handleRealtimeGround = useCallback((payload: any) => {
@@ -102,10 +259,10 @@ const AdminGrounds = () => {
                 </TableCell>
                 <TableCell>
                   <div className="flex space-x-2">
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" onClick={() => handleOpenEditForm(ground)}>
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button variant="outline" size="sm" className="text-red-500">
+                    <Button variant="outline" size="sm" className="text-red-500" onClick={() => handleOpenDeleteDialog(ground)}>
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
@@ -128,6 +285,162 @@ const AdminGrounds = () => {
         onOpenChange={setIsAddFormOpen}
         onSuccess={fetchGrounds}
       />
+
+      {/* Edit Ground Dialog */}
+      <Dialog open={isEditFormOpen} onOpenChange={setIsEditFormOpen}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Ground</DialogTitle>
+            <DialogDescription>
+              Update the ground information below. Click save when you're done.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Ground Name</Label>
+                <Input 
+                  id="name" 
+                  value={editedGround.name} 
+                  onChange={(e) => setEditedGround({...editedGround, name: e.target.value})}
+                  placeholder="Enter ground name"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="sportId">Sport</Label>
+                <Select 
+                  value={editedGround.sport_id} 
+                  onValueChange={(value) => setEditedGround({...editedGround, sport_id: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select sport" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sports.map((sport) => (
+                      <SelectItem key={sport.id} value={sport.id}>{sport.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="price">Price per Hour (₹)</Label>
+                <Input 
+                  id="price" 
+                  type="number"
+                  value={editedGround.price_per_hour} 
+                  onChange={(e) => setEditedGround({...editedGround, price_per_hour: e.target.value})}
+                  placeholder="Enter price per hour"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="capacity">Capacity</Label>
+                <Input 
+                  id="capacity" 
+                  type="number"
+                  value={editedGround.capacity} 
+                  onChange={(e) => setEditedGround({...editedGround, capacity: e.target.value})}
+                  placeholder="Enter capacity"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="openingTime">Opening Time</Label>
+                <Input 
+                  id="openingTime" 
+                  type="time"
+                  value={editedGround.opening_time} 
+                  onChange={(e) => setEditedGround({...editedGround, opening_time: e.target.value})}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="closingTime">Closing Time</Label>
+                <Input 
+                  id="closingTime" 
+                  type="time"
+                  value={editedGround.closing_time} 
+                  onChange={(e) => setEditedGround({...editedGround, closing_time: e.target.value})}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="address">Address</Label>
+              <Textarea 
+                id="address" 
+                value={editedGround.address} 
+                onChange={(e) => setEditedGround({...editedGround, address: e.target.value})}
+                placeholder="Enter full address"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="description">Description</Label>
+              <Textarea 
+                id="description" 
+                value={editedGround.description || ""} 
+                onChange={(e) => setEditedGround({...editedGround, description: e.target.value})}
+                placeholder="Enter ground description"
+              />
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Switch 
+                id="isActive"
+                checked={editedGround.is_active}
+                onCheckedChange={(checked) => setEditedGround({...editedGround, is_active: checked})}
+              />
+              <Label htmlFor="isActive">Active</Label>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Amenities</Label>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-1">
+                {availableAmenities.map((amenity) => (
+                  <div key={amenity} className="flex items-center space-x-2">
+                    <Checkbox 
+                      id={`amenity-${amenity}`}
+                      checked={editedGround.amenities.includes(amenity)}
+                      onCheckedChange={() => handleAmenityToggle(amenity)}
+                    />
+                    <Label htmlFor={`amenity-${amenity}`}>{amenity}</Label>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditFormOpen(false)}>Cancel</Button>
+            <Button onClick={handleEditGround} disabled={isLoading}>
+              {isLoading ? "Saving..." : "Save Changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Deletion</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete the ground "{selectedGround?.name}"? 
+              This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleDeleteGround} disabled={isLoading}>
+              {isLoading ? "Deleting..." : "Delete Ground"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

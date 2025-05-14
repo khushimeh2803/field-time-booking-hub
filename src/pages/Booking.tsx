@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
@@ -183,7 +184,7 @@ const Booking = () => {
         .select('*, membership_plans(*)')
         .eq('user_id', user.id)
         .gte('end_date', today)
-        .lt('start_date', today)
+        .lte('start_date', today)
         .single();
       
       if (error && error.code !== 'PGRST116') {
@@ -329,9 +330,25 @@ const Booking = () => {
         return;
       }
 
-      // Example start and end times from first and last slot
-      const firstSlot = timeSlotMap[selectedSlots[0]].split(" - ")[0];
-      const lastSlot = timeSlotMap[selectedSlots[selectedSlots.length - 1]].split(" - ")[1];
+      // Get start and end times from the first and last selected time slots
+      let firstSlot = "";
+      let lastSlot = "";
+      
+      // Make sure selectedSlots array is not empty and contains valid entries
+      if (selectedSlots.length > 0) {
+        const firstSlotId = selectedSlots[0];
+        const lastSlotId = selectedSlots[selectedSlots.length - 1];
+        
+        // Safely access the time slots
+        if (timeSlotMap[firstSlotId] && timeSlotMap[lastSlotId]) {
+          firstSlot = timeSlotMap[firstSlotId].split(" - ")[0];
+          lastSlot = timeSlotMap[lastSlotId].split(" - ")[1];
+        } else {
+          throw new Error("Invalid time slot selected");
+        }
+      } else {
+        throw new Error("No time slots selected");
+      }
 
       // Create booking in Supabase
       const { data: bookingData, error } = await supabase

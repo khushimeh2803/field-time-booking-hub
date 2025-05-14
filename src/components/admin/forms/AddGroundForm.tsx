@@ -1,39 +1,18 @@
+
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import * as z from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { 
-  Form, 
-  FormField, 
-  FormItem, 
-  FormLabel, 
-  FormControl, 
-  FormMessage,
-  FormDescription
-} from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { Loader2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
-import { X } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface AddGroundFormProps {
   open: boolean;
@@ -41,186 +20,138 @@ interface AddGroundFormProps {
   onSuccess: () => void;
 }
 
+// Define the form schema
 const formSchema = z.object({
-  name: z.string().min(2, "Ground name must be at least 2 characters"),
-  sport_id: z.string().uuid("Invalid sport selection"),
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  sport_id: z.string().min(1, "Please select a sport"),
   address: z.string().min(5, "Address must be at least 5 characters"),
-  capacity: z.coerce.number().int().positive("Capacity must be a positive number"),
-  price_per_hour: z.coerce.number().positive("Price must be a positive number"),
+  price_per_hour: z.string().refine(val => !isNaN(parseFloat(val)), "Price must be a number"),
+  capacity: z.string().refine(val => !isNaN(parseInt(val)), "Capacity must be a number"),
+  opening_time: z.string().min(1, "Opening time is required"),
+  closing_time: z.string().min(1, "Closing time is required"),
   description: z.string().optional(),
-  opening_time: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Invalid time format"),
-  closing_time: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Invalid time format"),
+  is_active: z.boolean().default(true),
+  images: z.array(z.string()).optional(),
   amenities: z.array(z.string()).optional(),
-  additional_sports: z.array(z.string()).optional(),
 });
 
-type FormValues = z.infer<typeof formSchema>;
-
-// List of available amenities
-const availableAmenities = [
-  { id: "changing-rooms", label: "Changing Rooms" },
-  { id: "showers", label: "Showers" },
-  { id: "floodlights", label: "Floodlights" },
-  { id: "parking", label: "Parking" },
-  { id: "spectator-seating", label: "Spectator Seating" },
-  { id: "scoreboard", label: "Scoreboard" },
-  { id: "cafeteria", label: "Cafeteria" },
-  { id: "indoor", label: "Indoor" },
-  { id: "outdoor", label: "Outdoor" },
-  { id: "wifi", label: "Wi-Fi" },
-  { id: "locker", label: "Lockers" },
-  { id: "equipment-rental", label: "Equipment Rental" },
-];
-
-const AddGroundForm: React.FC<AddGroundFormProps> = ({ open, onOpenChange, onSuccess }) => {
-  const [isSubmitting, setIsSubmitting] = useState(false);
+const AddGroundForm = ({ open, onOpenChange, onSuccess }: AddGroundFormProps) => {
   const [sports, setSports] = useState<any[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   
-  const form = useForm<FormValues>({
+  // Available amenities
+  const availableAmenities = [
+    "Parking", "Changing Rooms", "Showers", "Floodlights", "Spectator Seating", 
+    "Drinking Water", "Equipment Rental", "Refreshments", "Toilets", "First Aid",
+    "Badminton Court", "Cricket Pitch", "Football Field", "Basketball Court"
+  ];
+
+  // Initialize form
+  const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
       sport_id: "",
       address: "",
-      capacity: 0,
-      price_per_hour: 0,
+      price_per_hour: "",
+      capacity: "",
+      opening_time: "",
+      closing_time: "",
       description: "",
-      opening_time: "08:00",
-      closing_time: "22:00",
+      is_active: true,
+      images: [],
       amenities: [],
-      additional_sports: [],
     },
   });
 
+  // Fetch sports for the dropdown
   useEffect(() => {
+    const fetchSports = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("sports")
+          .select("id, name")
+          .order("name");
+        
+        if (error) throw error;
+        setSports(data || []);
+      } catch (error) {
+        console.error("Error fetching sports:", error);
+      }
+    };
+
     if (open) {
       fetchSports();
-      form.reset({
-        name: "",
-        sport_id: "",
-        address: "",
-        capacity: 0,
-        price_per_hour: 0,
-        description: "",
-        opening_time: "08:00",
-        closing_time: "22:00",
-        amenities: [],
-        additional_sports: [],
-      });
+      form.reset(); // Reset form when opened
     }
   }, [open, form]);
 
-  const fetchSports = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("sports")
-        .select("id, name")
-        .order("name");
-
-      if (error) throw error;
-      setSports(data || []);
-    } catch (error) {
-      console.error("Error fetching sports:", error);
-    }
-  };
-
-  const onSubmit = async (values: FormValues) => {
+  // Form submission handler
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsSubmitting(true);
-    
     try {
       const { error } = await supabase
         .from("grounds")
-        .insert([
-          {
-            name: values.name,
-            sport_id: values.sport_id,
-            address: values.address,
-            capacity: values.capacity,
-            price_per_hour: values.price_per_hour,
-            description: values.description || null,
-            opening_time: values.opening_time,
-            closing_time: values.closing_time,
-            amenities: values.amenities && values.amenities.length > 0 
-              ? values.amenities.map(a => availableAmenities.find(am => am.id === a)?.label || a) 
-              : null,
-            additional_sports: values.additional_sports && values.additional_sports.length > 0
-              ? values.additional_sports.map(sportId => {
-                  const sport = sports.find(s => s.id === sportId);
-                  return sport ? sport.name : null;
-                }).filter(Boolean)
-              : null,
-          },
-        ]);
-
+        .insert({
+          name: values.name,
+          sport_id: values.sport_id,
+          address: values.address,
+          price_per_hour: parseFloat(values.price_per_hour),
+          capacity: parseInt(values.capacity),
+          opening_time: values.opening_time,
+          closing_time: values.closing_time,
+          description: values.description || null,
+          is_active: values.is_active,
+          images: values.images || [],
+          amenities: values.amenities || [],
+        });
+      
       if (error) throw error;
       
       toast({
         title: "Ground Added",
-        description: `${values.name} has been successfully added`,
+        description: "New ground has been successfully added."
       });
       
-      form.reset();
       onOpenChange(false);
       onSuccess();
     } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Failed to Add Ground",
-        description: error.message || "An unexpected error occurred",
+        title: "Error",
+        description: error.message || "Failed to add ground"
       });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Helper function to get the selected additional sports
-  const getSelectedAdditionalSports = () => {
-    const additionalSports = form.watch('additional_sports') || [];
-    return sports
-      .filter(sport => additionalSports.includes(sport.id))
-      .map(sport => ({
-        id: sport.id,
-        name: sport.name
-      }));
-  };
-
-  // Remove a sport from additional sports
-  const removeAdditionalSport = (sportId: string) => {
-    const currentSports = form.getValues('additional_sports') || [];
-    form.setValue(
-      'additional_sports',
-      currentSports.filter(id => id !== sportId)
-    );
-  };
-
-  // Add a sport to additional sports
-  const addAdditionalSport = (sportId: string) => {
-    const primarySportId = form.getValues('sport_id');
-    if (sportId === primarySportId) {
-      toast({
-        variant: "destructive",
-        title: "Invalid Selection",
-        description: "You cannot add the primary sport as an additional sport",
-      });
-      return;
-    }
+  // Toggle amenity selection
+  const toggleAmenity = (amenity: string) => {
+    const currentAmenities = form.getValues("amenities") || [];
+    const amenityExists = currentAmenities.includes(amenity);
     
-    const currentSports = form.getValues('additional_sports') || [];
-    if (!currentSports.includes(sportId)) {
-      form.setValue('additional_sports', [...currentSports, sportId]);
+    if (amenityExists) {
+      form.setValue("amenities", currentAmenities.filter(a => a !== amenity));
+    } else {
+      form.setValue("amenities", [...currentAmenities, amenity]);
     }
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add New Ground</DialogTitle>
+          <DialogDescription>
+            Fill in the details below to add a new sports ground.
+          </DialogDescription>
         </DialogHeader>
+        
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="name"
@@ -228,7 +159,7 @@ const AddGroundForm: React.FC<AddGroundFormProps> = ({ open, onOpenChange, onSuc
                   <FormItem>
                     <FormLabel>Ground Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g. Central Park Field" {...field} />
+                      <Input placeholder="e.g., Central Football Ground" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -240,98 +171,26 @@ const AddGroundForm: React.FC<AddGroundFormProps> = ({ open, onOpenChange, onSuc
                 name="sport_id"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Primary Sport Type</FormLabel>
-                    <Select 
-                      onValueChange={(value) => {
-                        // Remove from additional sports if it's now the primary sport
-                        const additionalSports = form.getValues('additional_sports') || [];
-                        if (additionalSports.includes(value)) {
-                          form.setValue(
-                            'additional_sports', 
-                            additionalSports.filter(id => id !== value)
-                          );
-                        }
-                        field.onChange(value);
-                      }} 
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
+                    <FormLabel>Sport</FormLabel>
+                    <FormControl>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select sport" />
+                          <SelectValue placeholder="Select sport type" />
                         </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {sports.map((sport) => (
-                          <SelectItem key={sport.id} value={sport.id}>
-                            {sport.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                        <SelectContent>
+                          {sports.map((sport) => (
+                            <SelectItem key={sport.id} value={sport.id}>
+                              {sport.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
             </div>
-            
-            {/* Additional Sports Section */}
-            <FormField
-              control={form.control}
-              name="additional_sports"
-              render={() => (
-                <FormItem>
-                  <div className="mb-2">
-                    <FormLabel className="text-base">Additional Sports Available</FormLabel>
-                    <FormDescription>
-                      Select other sports that can be played at this ground
-                    </FormDescription>
-                  </div>
-                  
-                  {/* Display selected sports as badges */}
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {getSelectedAdditionalSports().map(sport => (
-                      <Badge key={sport.id} variant="secondary" className="px-2 py-1">
-                        {sport.name}
-                        <button 
-                          type="button" 
-                          onClick={() => removeAdditionalSport(sport.id)}
-                          className="ml-1 hover:text-destructive"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </Badge>
-                    ))}
-                    {getSelectedAdditionalSports().length === 0 && (
-                      <p className="text-sm text-muted-foreground">No additional sports selected</p>
-                    )}
-                  </div>
-                  
-                  {/* Dropdown to add more sports */}
-                  <Select
-                    onValueChange={(value) => {
-                      addAdditionalSport(value);
-                    }}
-                    value=""
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Add another sport" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {sports
-                        .filter(sport => sport.id !== form.getValues('sport_id'))
-                        .filter(sport => !(form.getValues('additional_sports') || []).includes(sport.id))
-                        .map((sport) => (
-                          <SelectItem key={sport.id} value={sport.id}>
-                            {sport.name}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                </FormItem>
-              )}
-            />
             
             <FormField
               control={form.control}
@@ -340,22 +199,22 @@ const AddGroundForm: React.FC<AddGroundFormProps> = ({ open, onOpenChange, onSuc
                 <FormItem>
                   <FormLabel>Address</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter full address" {...field} />
+                    <Textarea placeholder="Full address of the ground" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
             
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="capacity"
+                name="price_per_hour"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Capacity</FormLabel>
+                    <FormLabel>Price per Hour (₹)</FormLabel>
                     <FormControl>
-                      <Input type="number" {...field} />
+                      <Input type="number" placeholder="e.g., 1000" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -364,20 +223,18 @@ const AddGroundForm: React.FC<AddGroundFormProps> = ({ open, onOpenChange, onSuc
               
               <FormField
                 control={form.control}
-                name="price_per_hour"
+                name="capacity"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Price Per Hour</FormLabel>
+                    <FormLabel>Capacity</FormLabel>
                     <FormControl>
-                      <Input type="number" step="0.01" {...field} />
+                      <Input type="number" placeholder="e.g., 22" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
+              
               <FormField
                 control={form.control}
                 name="opening_time"
@@ -409,49 +266,13 @@ const AddGroundForm: React.FC<AddGroundFormProps> = ({ open, onOpenChange, onSuc
             
             <FormField
               control={form.control}
-              name="amenities"
-              render={() => (
+              name="description"
+              render={({ field }) => (
                 <FormItem>
-                  <div className="mb-4">
-                    <FormLabel className="text-base">Amenities</FormLabel>
-                    <FormDescription>
-                      Select the amenities available at this ground
-                    </FormDescription>
-                  </div>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                    {availableAmenities.map((amenity) => (
-                      <FormField
-                        key={amenity.id}
-                        control={form.control}
-                        name="amenities"
-                        render={({ field }) => {
-                          return (
-                            <FormItem
-                              key={amenity.id}
-                              className="flex flex-row items-start space-x-3 space-y-0"
-                            >
-                              <FormControl>
-                                <Checkbox
-                                  checked={field.value?.includes(amenity.id)}
-                                  onCheckedChange={(checked) => {
-                                    const currentValues = field.value || [];
-                                    return checked
-                                      ? field.onChange([...currentValues, amenity.id])
-                                      : field.onChange(
-                                          currentValues.filter((value) => value !== amenity.id)
-                                        );
-                                  }}
-                                />
-                              </FormControl>
-                              <FormLabel className="font-normal">
-                                {amenity.label}
-                              </FormLabel>
-                            </FormItem>
-                          );
-                        }}
-                      />
-                    ))}
-                  </div>
+                  <FormLabel>Description</FormLabel>
+                  <FormControl>
+                    <Textarea placeholder="Describe the ground features and highlights" {...field} />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
@@ -459,13 +280,49 @@ const AddGroundForm: React.FC<AddGroundFormProps> = ({ open, onOpenChange, onSuc
             
             <FormField
               control={form.control}
-              name="description"
+              name="is_active"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                  <div className="space-y-0.5">
+                    <FormLabel>Active Status</FormLabel>
+                    <FormDescription className="text-sm text-gray-500">
+                      Set as active to make this ground bookable for users.
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="amenities"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl>
-                    <Textarea placeholder="Enter ground description..." {...field} />
-                  </FormControl>
+                  <FormLabel>Amenities</FormLabel>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-1">
+                    {availableAmenities.map((amenity) => (
+                      <div key={amenity} className="flex items-center space-x-2">
+                        <Checkbox 
+                          id={`amenity-${amenity}`}
+                          checked={(field.value || []).includes(amenity)}
+                          onCheckedChange={() => toggleAmenity(amenity)}
+                        />
+                        <label 
+                          htmlFor={`amenity-${amenity}`}
+                          className="text-sm cursor-pointer"
+                        >
+                          {amenity}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
                   <FormMessage />
                 </FormItem>
               )}
@@ -476,8 +333,7 @@ const AddGroundForm: React.FC<AddGroundFormProps> = ({ open, onOpenChange, onSuc
                 Cancel
               </Button>
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Add Ground
+                {isSubmitting ? "Adding..." : "Add Ground"}
               </Button>
             </DialogFooter>
           </form>
