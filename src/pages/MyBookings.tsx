@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { supabase } from "@/integrations/supabase/client";
@@ -89,7 +90,7 @@ const MyBookings = () => {
               .maybeSingle();
 
             return {
-              id: booking.id.toString(), // Convert ID to string to fix type error
+              id: booking.id.toString(), // Explicitly convert ID to string
               groundName: groundData?.name || "Unknown Ground",
               sport: groundData?.sport_id || "",
               date: new Date(booking.booking_date),
