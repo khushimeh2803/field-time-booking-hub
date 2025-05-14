@@ -35,14 +35,16 @@ const AdminGrounds = () => {
     closing_time: "",
     description: "",
     is_active: true,
-    amenities: [] as string[]
+    amenities: [] as string[],
+    images: [] as string[] // Add images array to edited ground
   });
 
-  // Available amenities
+  // Available amenities with both facilities and sports grounds
   const availableAmenities = [
     "Parking", "Changing Rooms", "Showers", "Floodlights", "Spectator Seating", 
     "Drinking Water", "Equipment Rental", "Refreshments", "Toilets", "First Aid",
-    "Badminton Court", "Cricket Pitch", "Football Field", "Basketball Court"
+    "Badminton Court", "Cricket Pitch", "Football Field", "Basketball Court",
+    "Tennis Court", "Swimming Pool", "Gym", "Volleyball Court", "Table Tennis"
   ];
 
   useEffect(() => {
@@ -98,7 +100,8 @@ const AdminGrounds = () => {
       closing_time: ground.closing_time || "",
       description: ground.description || "",
       is_active: ground.is_active || true,
-      amenities: ground.amenities || []
+      amenities: ground.amenities || [],
+      images: ground.images || [] // Include existing images
     });
     setIsEditFormOpen(true);
   };
@@ -111,20 +114,24 @@ const AdminGrounds = () => {
   const handleEditGround = async () => {
     setIsLoading(true);
     try {
+      // Create update object from editedGround
+      const updateData = {
+        name: editedGround.name,
+        address: editedGround.address,
+        sport_id: editedGround.sport_id,
+        price_per_hour: parseFloat(editedGround.price_per_hour),
+        capacity: parseInt(editedGround.capacity),
+        opening_time: editedGround.opening_time,
+        closing_time: editedGround.closing_time,
+        description: editedGround.description,
+        is_active: editedGround.is_active,
+        amenities: editedGround.amenities,
+        images: editedGround.images
+      };
+
       const { error } = await supabase
         .from("grounds")
-        .update({
-          name: editedGround.name,
-          address: editedGround.address,
-          sport_id: editedGround.sport_id,
-          price_per_hour: parseFloat(editedGround.price_per_hour),
-          capacity: parseInt(editedGround.capacity),
-          opening_time: editedGround.opening_time,
-          closing_time: editedGround.closing_time,
-          description: editedGround.description,
-          is_active: editedGround.is_active,
-          amenities: editedGround.amenities
-        })
+        .update(updateData)
         .eq("id", selectedGround.id);
 
       if (error) throw error;
@@ -209,6 +216,25 @@ const AdminGrounds = () => {
         };
       }
     });
+  };
+
+  // New function to add image URL
+  const handleAddImage = () => {
+    const imageUrl = window.prompt("Enter image URL:");
+    if (imageUrl) {
+      setEditedGround(prev => ({
+        ...prev,
+        images: [...(prev.images || []), imageUrl]
+      }));
+    }
+  };
+
+  // New function to remove image
+  const handleRemoveImage = (index: number) => {
+    setEditedGround(prev => ({
+      ...prev,
+      images: prev.images.filter((_, i) => i !== index)
+    }));
   };
 
   const handleRealtimeGround = useCallback((payload: any) => {
@@ -388,6 +414,43 @@ const AdminGrounds = () => {
               />
             </div>
 
+            {/* Ground Images Section */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label>Ground Images</Label>
+                <Button type="button" variant="outline" size="sm" onClick={handleAddImage}>
+                  Add Image URL
+                </Button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                {editedGround.images && editedGround.images.map((imageUrl, index) => (
+                  <div key={index} className="relative group">
+                    <img 
+                      src={imageUrl} 
+                      alt={`Ground image ${index+1}`}
+                      className="w-full h-40 object-cover rounded-md"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = "https://via.placeholder.com/300x200?text=Invalid+Image+URL";
+                      }}
+                    />
+                    <Button 
+                      variant="destructive" 
+                      size="sm" 
+                      onClick={() => handleRemoveImage(index)}
+                      className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                ))}
+                {(!editedGround.images || editedGround.images.length === 0) && (
+                  <div className="border border-dashed border-gray-300 rounded-md p-4 text-center text-gray-500">
+                    No images added yet.
+                  </div>
+                )}
+              </div>
+            </div>
+
             <div className="flex items-center space-x-2">
               <Switch 
                 id="isActive"
@@ -398,7 +461,7 @@ const AdminGrounds = () => {
             </div>
 
             <div className="space-y-2">
-              <Label>Amenities</Label>
+              <Label>Amenities & Available Sports Facilities</Label>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-1">
                 {availableAmenities.map((amenity) => (
                   <div key={amenity} className="flex items-center space-x-2">

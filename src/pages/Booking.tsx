@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
@@ -334,20 +333,30 @@ const Booking = () => {
       let firstSlot = "";
       let lastSlot = "";
       
-      // Make sure selectedSlots array is not empty and contains valid entries
+      // Safe access to time slots - FIX HERE
       if (selectedSlots.length > 0) {
-        const firstSlotId = selectedSlots[0];
-        const lastSlotId = selectedSlots[selectedSlots.length - 1];
+        const sortedSlots = [...selectedSlots].sort((a, b) => parseInt(a) - parseInt(b));
+        const firstSlotId = sortedSlots[0];
+        const lastSlotId = sortedSlots[sortedSlots.length - 1];
         
-        // Safely access the time slots
         if (timeSlotMap[firstSlotId] && timeSlotMap[lastSlotId]) {
           firstSlot = timeSlotMap[firstSlotId].split(" - ")[0];
           lastSlot = timeSlotMap[lastSlotId].split(" - ")[1];
         } else {
-          throw new Error("Invalid time slot selected");
+          toast({
+            variant: "destructive",
+            title: "Invalid Time Slot",
+            description: "One or more selected time slots is invalid."
+          });
+          return;
         }
       } else {
-        throw new Error("No time slots selected");
+        toast({
+          variant: "destructive",
+          title: "Missing Time Slots",
+          description: "Please select at least one time slot."
+        });
+        return;
       }
 
       // Create booking in Supabase

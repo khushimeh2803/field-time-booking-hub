@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -12,6 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { Plus, X } from "lucide-react";
 
 interface AddGroundFormProps {
   open: boolean;
@@ -37,13 +39,16 @@ const formSchema = z.object({
 const AddGroundForm = ({ open, onOpenChange, onSuccess }: AddGroundFormProps) => {
   const [sports, setSports] = useState<any[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
+  const [newImageUrl, setNewImageUrl] = useState("");
   const { toast } = useToast();
   
-  // Available amenities
+  // Available amenities with sports facilities
   const availableAmenities = [
     "Parking", "Changing Rooms", "Showers", "Floodlights", "Spectator Seating", 
     "Drinking Water", "Equipment Rental", "Refreshments", "Toilets", "First Aid",
-    "Badminton Court", "Cricket Pitch", "Football Field", "Basketball Court"
+    "Badminton Court", "Cricket Pitch", "Football Field", "Basketball Court",
+    "Tennis Court", "Swimming Pool", "Gym", "Volleyball Court", "Table Tennis"
   ];
 
   // Initialize form
@@ -82,9 +87,29 @@ const AddGroundForm = ({ open, onOpenChange, onSuccess }: AddGroundFormProps) =>
 
     if (open) {
       fetchSports();
+      setImageUrls([]);
+      setNewImageUrl("");
       form.reset(); // Reset form when opened
     }
   }, [open, form]);
+
+  // Update the form value when imageUrls changes
+  useEffect(() => {
+    form.setValue("images", imageUrls);
+  }, [imageUrls, form]);
+
+  // Add image URL to the list
+  const handleAddImage = () => {
+    if (newImageUrl && newImageUrl.trim() !== "") {
+      setImageUrls([...imageUrls, newImageUrl.trim()]);
+      setNewImageUrl("");
+    }
+  };
+
+  // Remove image URL from the list
+  const handleRemoveImage = (index: number) => {
+    setImageUrls(imageUrls.filter((_, i) => i !== index));
+  };
 
   // Form submission handler
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
@@ -102,8 +127,8 @@ const AddGroundForm = ({ open, onOpenChange, onSuccess }: AddGroundFormProps) =>
           closing_time: values.closing_time,
           description: values.description || null,
           is_active: values.is_active,
-          images: values.images || [],
-          amenities: values.amenities || [],
+          images: imageUrls.length > 0 ? imageUrls : null,
+          amenities: values.amenities || null,
         });
       
       if (error) throw error;
@@ -276,6 +301,58 @@ const AddGroundForm = ({ open, onOpenChange, onSuccess }: AddGroundFormProps) =>
                 </FormItem>
               )}
             />
+
+            {/* Image Gallery Section */}
+            <div className="space-y-2">
+              <FormLabel>Ground Images</FormLabel>
+              <FormDescription>
+                Add image URLs for the ground. These will be displayed to users.
+              </FormDescription>
+              
+              <div className="flex gap-2 mb-2">
+                <Input 
+                  placeholder="Enter image URL" 
+                  value={newImageUrl}
+                  onChange={(e) => setNewImageUrl(e.target.value)}
+                />
+                <Button 
+                  type="button" 
+                  variant="secondary" 
+                  onClick={handleAddImage}
+                >
+                  <Plus className="h-4 w-4 mr-1" /> Add
+                </Button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mt-2">
+                {imageUrls.map((url, index) => (
+                  <div key={index} className="relative group border rounded-md overflow-hidden">
+                    <img 
+                      src={url} 
+                      alt={`Ground preview ${index+1}`} 
+                      className="w-full h-32 object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = "https://via.placeholder.com/300x200?text=Invalid+Image";
+                      }}
+                    />
+                    <Button 
+                      type="button" 
+                      variant="destructive" 
+                      size="sm"
+                      className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition"
+                      onClick={() => handleRemoveImage(index)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+                {imageUrls.length === 0 && (
+                  <div className="border border-dashed border-gray-300 rounded-md p-4 flex items-center justify-center text-gray-500">
+                    No images added yet
+                  </div>
+                )}
+              </div>
+            </div>
             
             <FormField
               control={form.control}
@@ -284,7 +361,7 @@ const AddGroundForm = ({ open, onOpenChange, onSuccess }: AddGroundFormProps) =>
                 <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                   <div className="space-y-0.5">
                     <FormLabel>Active Status</FormLabel>
-                    <FormDescription className="text-sm text-gray-500">
+                    <FormDescription>
                       Set as active to make this ground bookable for users.
                     </FormDescription>
                   </div>
@@ -304,7 +381,10 @@ const AddGroundForm = ({ open, onOpenChange, onSuccess }: AddGroundFormProps) =>
               name="amenities"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Amenities</FormLabel>
+                  <FormLabel>Amenities & Available Sports Facilities</FormLabel>
+                  <FormDescription>
+                    Select all amenities and sports facilities available at this ground.
+                  </FormDescription>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-1">
                     {availableAmenities.map((amenity) => (
                       <div key={amenity} className="flex items-center space-x-2">
