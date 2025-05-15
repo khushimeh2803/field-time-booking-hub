@@ -8,8 +8,6 @@ import StatsOverview from "@/components/admin/reports/StatsOverview";
 import BookingsBarChart from "@/components/admin/reports/BookingsBarChart";
 import SportPieChart from "@/components/admin/reports/SportPieChart";
 import ExportPDF from "@/components/admin/ExportPDF";
-import AdminLayout from "@/components/admin/AdminLayout";
-import * as XLSX from 'xlsx';
 
 // For demo purposes, using static data - in a real app this would come from the database
 const bookingsByMonth = [
@@ -92,96 +90,37 @@ const AdminReports = () => {
       });
     }
   };
-  
-  const exportToExcel = () => {
-    try {
-      // Create workbook
-      const wb = XLSX.utils.book_new();
-      
-      // Sheet 1: Summary
-      const summaryData = [
-        ['Metric', 'Value'],
-        ['Total Users', totalUsers],
-        ['Total Bookings', totalBookings],
-        ['Total Revenue', `$${totalRevenue.toFixed(2)}`],
-        ['Active Grounds', activeGrounds]
-      ];
-      const summaryWS = XLSX.utils.aoa_to_sheet(summaryData);
-      XLSX.utils.book_append_sheet(wb, summaryWS, "Summary");
-      
-      // Sheet 2: Bookings Over Time
-      const bookingsTimeData = [
-        ['Month', 'Bookings'],
-        ...bookingsByMonth.map(item => [item.name, item.bookings])
-      ];
-      const bookingsTimeWS = XLSX.utils.aoa_to_sheet(bookingsTimeData);
-      XLSX.utils.book_append_sheet(wb, bookingsTimeWS, "Bookings Over Time");
-      
-      // Sheet 3: Bookings by Sport
-      const sportData = [
-        ['Sport', 'Percentage'],
-        ...sportDistribution.map(item => [item.name, `${item.value}%`])
-      ];
-      const sportWS = XLSX.utils.aoa_to_sheet(sportData);
-      XLSX.utils.book_append_sheet(wb, sportWS, "Bookings by Sport");
-      
-      // Generate filename with current date
-      const date = new Date();
-      const fileName = `reports_${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}.xlsx`;
-      
-      // Write and download
-      XLSX.writeFile(wb, fileName);
-      
-      toast({
-        title: "Export Successful",
-        description: "Reports data has been exported to Excel"
-      });
-    } catch (error) {
-      console.error("Error exporting to Excel:", error);
-      toast({
-        variant: "destructive",
-        title: "Export Failed",
-        description: "Failed to export data to Excel"
-      });
-    }
-  };
 
   return (
-    <AdminLayout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Reports & Analytics</h1>
-          <div className="flex space-x-2">
-            <Button onClick={fetchStatistics} variant="outline">
-              <RefreshCcw className="h-4 w-4 mr-2" />
-              Refresh Data
-            </Button>
-            <ExportPDF 
-              contentId="reports-content"
-              fileName="sports-grounds-reports"
-              buttonText="Export as PDF"
-            />
-            <Button onClick={exportToExcel}>
-              <Download className="h-4 w-4 mr-2" />
-              Export as Excel
-            </Button>
-          </div>
-        </div>
-        
-        <div id="reports-content">
-          <StatsOverview
-            totalUsers={totalUsers}
-            totalBookings={totalBookings}
-            totalRevenue={totalRevenue}
-            activeGrounds={activeGrounds}
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Reports & Analytics</h1>
+        <div className="flex space-x-2">
+          <Button onClick={fetchStatistics} variant="outline">
+            <RefreshCcw className="h-4 w-4 mr-2" />
+            Refresh Data
+          </Button>
+          <ExportPDF 
+            contentId="reports-content"
+            fileName="sports-grounds-reports"
+            buttonText="Export Reports"
           />
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-            <BookingsBarChart data={bookingsByMonth} />
-            <SportPieChart data={sportDistribution} colors={COLORS} />
-          </div>
         </div>
       </div>
-    </AdminLayout>
+      
+      <div id="reports-content">
+        <StatsOverview
+          totalUsers={totalUsers}
+          totalBookings={totalBookings}
+          totalRevenue={totalRevenue}
+          activeGrounds={activeGrounds}
+        />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+          <BookingsBarChart data={bookingsByMonth} />
+          <SportPieChart data={sportDistribution} colors={COLORS} />
+        </div>
+      </div>
+    </div>
   );
 };
 

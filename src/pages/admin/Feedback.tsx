@@ -20,10 +20,9 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Check, X, MessageSquare, Star, StarHalf, RefreshCw, Download } from "lucide-react";
+import { Check, X, MessageSquare, Star, StarHalf } from "lucide-react";
 import { format } from "date-fns";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import ExportPDF from "@/components/admin/ExportPDF";
 
 const AdminFeedback = () => {
   const [contactFeedbacks, setContactFeedbacks] = useState<any[]>([]);
@@ -58,28 +57,24 @@ const AdminFeedback = () => {
           feedback_date,
           booking_id,
           user_id,
-          bookings:booking_id (
+          bookings (
             id,
             ground_id,
             booking_date,
-            grounds:ground_id (name, address)
+            grounds (name, address)
           ),
-          profiles:user_id (full_name, email)
+          profiles (full_name, email)
         `)
         .order("feedback_date", { ascending: false });
 
-      if (bookingError) {
-        console.error("Booking feedback error:", bookingError);
-        throw bookingError;
-      }
-      
+      if (bookingError) throw bookingError;
       setBookingFeedbacks(bookingData || []);
     } catch (error: any) {
       console.error("Error fetching feedback:", error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to load feedback data: " + error.message,
+        description: "Failed to load feedback data",
       });
     } finally {
       setLoading(false);
@@ -89,6 +84,7 @@ const AdminFeedback = () => {
   const handleMarkAsRead = async (id: string, currentStatus: boolean) => {
     try {
       // This would update a "is_read" field if it existed in your table
+      // For now, we'll just show the toast
       toast({
         title: "Status Updated",
         description: `Feedback marked as ${currentStatus ? "unread" : "read"}`,
@@ -126,20 +122,9 @@ const AdminFeedback = () => {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">User Feedback & Ratings</h1>
-          <div className="flex gap-2">
-            <Button onClick={fetchFeedbacks} variant="outline">
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh Data
-            </Button>
-            <ExportPDF 
-              contentId="feedback-data" 
-              fileName="user-feedback" 
-              buttonText="Export Feedback"
-            />
-          </div>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} id="feedback-data">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="mb-4">
             <TabsTrigger value="booking">Booking Ratings</TabsTrigger>
             <TabsTrigger value="contact">Contact Submissions</TabsTrigger>
