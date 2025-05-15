@@ -16,6 +16,8 @@ import NotFound from "./pages/NotFound";
 import AboutUs from "./pages/AboutUs";
 import ContactUs from "./pages/ContactUs";
 import Membership from "./pages/Membership";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import AdminLayout from "./components/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/Dashboard";
 import AdminSports from "./pages/admin/Sports";
@@ -30,6 +32,10 @@ import MembershipPlans from "./pages/admin/MembershipPlans";
 import UserMemberships from "./pages/admin/UserMemberships";
 import ContactSubmissions from "./pages/admin/ContactSubmissions";
 import ProtectedRoute from "./components/ProtectedRoute";
+
+// Add xlsx dependency
+import * as XLSX from 'xlsx';
+import { RefreshCw } from "lucide-react";
 
 const queryClient = new QueryClient();
 
@@ -48,6 +54,8 @@ const App = () => (
           <Route path="/my-bookings" element={<ProtectedRoute><MyBookings /></ProtectedRoute>} />
           <Route path="/signin" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/about" element={<AboutUs />} />
           <Route path="/contact" element={<ContactUs />} />
           <Route path="/membership" element={<Membership />} />

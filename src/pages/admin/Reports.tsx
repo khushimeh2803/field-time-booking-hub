@@ -3,11 +3,13 @@ import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { RefreshCcw, Download } from "lucide-react";
+import { RefreshCcw, Download, FileSpreadsheet } from "lucide-react";
 import StatsOverview from "@/components/admin/reports/StatsOverview";
 import BookingsBarChart from "@/components/admin/reports/BookingsBarChart";
 import SportPieChart from "@/components/admin/reports/SportPieChart";
 import ExportPDF from "@/components/admin/ExportPDF";
+import * as XLSX from "xlsx";
+import { format } from "date-fns";
 
 // For demo purposes, using static data - in a real app this would come from the database
 const bookingsByMonth = [
@@ -91,6 +93,54 @@ const AdminReports = () => {
     }
   };
 
+  const exportToExcel = () => {
+    try {
+      // Create a new workbook
+      const wb = XLSX.utils.book_new();
+      
+      // Sheet 1: Summary
+      const summaryData = [
+        { Metric: 'Total Users', Value: totalUsers },
+        { Metric: 'Total Bookings', Value: totalBookings },
+        { Metric: 'Total Revenue', Value: `$${totalRevenue.toFixed(2)}` },
+        { Metric: 'Active Grounds', Value: activeGrounds }
+      ];
+      const summarySheet = XLSX.utils.json_to_sheet(summaryData);
+      XLSX.utils.book_append_sheet(wb, summarySheet, "Summary");
+      
+      // Sheet 2: Bookings Over Time
+      const bookingsSheet = XLSX.utils.json_to_sheet(bookingsByMonth);
+      XLSX.utils.book_append_sheet(wb, bookingsSheet, "Bookings Over Time");
+      
+      // Sheet 3: Bookings by Sport
+      const sportData = sportDistribution.map(item => ({
+        Sport: item.name,
+        Percentage: `${(item.value / sportDistribution.reduce((sum, i) => sum + i.value, 0) * 100).toFixed(1)}%`,
+        Value: item.value
+      }));
+      const sportsSheet = XLSX.utils.json_to_sheet(sportData);
+      XLSX.utils.book_append_sheet(wb, sportsSheet, "Bookings by Sport");
+      
+      // Generate filename with current date
+      const fileName = `reports_${format(new Date(), "yyyy-MM-dd")}.xlsx`;
+      
+      // Write file and trigger download
+      XLSX.writeFile(wb, fileName);
+      
+      toast({
+        title: "Export Complete",
+        description: "Report data has been exported to Excel successfully!"
+      });
+    } catch (error: any) {
+      console.error("Error exporting to Excel:", error);
+      toast({
+        variant: "destructive",
+        title: "Export Failed",
+        description: error.message || "Failed to export report data"
+      });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -103,8 +153,12 @@ const AdminReports = () => {
           <ExportPDF 
             contentId="reports-content"
             fileName="sports-grounds-reports"
-            buttonText="Export Reports"
+            buttonText="Export as PDF"
           />
+          <Button onClick={exportToExcel} variant="outline">
+            <FileSpreadsheet className="h-4 w-4 mr-2" />
+            Export as Excel
+          </Button>
         </div>
       </div>
       

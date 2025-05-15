@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Check, X, MessageSquare, Star, StarHalf } from "lucide-react";
 import { format } from "date-fns";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { RefreshCw } from "lucide-react";
 
 const AdminFeedback = () => {
   const [contactFeedbacks, setContactFeedbacks] = useState<any[]>([]);
@@ -48,7 +48,7 @@ const AdminFeedback = () => {
       if (contactError) throw contactError;
       setContactFeedbacks(contactData || []);
       
-      // 2. Fetch booking ratings with related information
+      // 2. Fetch booking ratings with related information - using maybeSingle for safer queries
       const { data: bookingData, error: bookingError } = await supabase
         .from("booking_feedback")
         .select(`
@@ -57,24 +57,25 @@ const AdminFeedback = () => {
           feedback_date,
           booking_id,
           user_id,
-          bookings (
+          bookings!booking_id (
             id,
             ground_id,
             booking_date,
             grounds (name, address)
           ),
-          profiles (full_name, email)
+          profiles!user_id (full_name, email)
         `)
         .order("feedback_date", { ascending: false });
 
       if (bookingError) throw bookingError;
+      console.log("Booking feedback data:", bookingData);
       setBookingFeedbacks(bookingData || []);
     } catch (error: any) {
       console.error("Error fetching feedback:", error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to load feedback data",
+        description: "Failed to load feedback data: " + error.message,
       });
     } finally {
       setLoading(false);
@@ -122,6 +123,10 @@ const AdminFeedback = () => {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">User Feedback & Ratings</h1>
+          <Button onClick={fetchFeedbacks}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh Data
+          </Button>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
