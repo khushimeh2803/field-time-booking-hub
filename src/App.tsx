@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -64,12 +65,12 @@ function App() {
             <Route path="/admin/users" element={<ProtectedRoute><AdminUsers /></ProtectedRoute>} />
             <Route path="/admin/grounds" element={<ProtectedRoute><AdminGrounds /></ProtectedRoute>} />
             <Route path="/admin/sports" element={<ProtectedRoute><AdminSports /></ProtectedRoute>} />
-            <Route path="/admin/membership-plans" element={<ProtectedRoute><AdminMembershipPlans /></ProtectedRoute>} />
-            <Route path="/admin/user-memberships" element={<ProtectedRoute><AdminUserMemberships /></ProtectedRoute>} />
-            <Route path="/admin/promo-management" element={<ProtectedRoute><AdminPromoManagement /></ProtectedRoute>} />
+            <Route path="/admin/membership-plans" element={<ProtectedRoute><MembershipPlans /></ProtectedRoute>} />
+            <Route path="/admin/user-memberships" element={<ProtectedRoute><UserMemberships /></ProtectedRoute>} />
+            <Route path="/admin/promo-management" element={<ProtectedRoute><PromoManagement /></ProtectedRoute>} />
             <Route path="/admin/reports" element={<ProtectedRoute><AdminReports /></ProtectedRoute>} />
             <Route path="/admin/feedback" element={<ProtectedRoute><AdminFeedback /></ProtectedRoute>} />
-            <Route path="/admin/contact-submissions" element={<ProtectedRoute><AdminContactSubmissions /></ProtectedRoute>} />
+            <Route path="/admin/contact-submissions" element={<ProtectedRoute><ContactSubmissions /></ProtectedRoute>} />
             <Route path="/admin/settings" element={<ProtectedRoute><AdminSettings /></ProtectedRoute>} />
           </Routes>
         </BrowserRouter>
