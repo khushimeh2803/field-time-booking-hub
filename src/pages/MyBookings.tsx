@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { supabase } from "@/integrations/supabase/client";
@@ -152,11 +151,11 @@ const MyBookings = () => {
         return;
       }
 
-      // Save rating to the database - bookingId is already a string now
+      // Save rating to the database
       const { error } = await supabase
         .from("booking_feedback")
         .insert({
-          booking_id: bookingId,
+          booking_id: bookingId, // This is now a string, matching the expected type
           user_id: user.id,
           rating: rating,
           feedback_date: new Date().toISOString()
